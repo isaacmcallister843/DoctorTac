@@ -5,7 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 class forwardTrajectory(object):
     
-    def __init__(self, target_point_1, target_point_2, target_z_height : float, total_time : float, freqeuncy : float ) -> None:
+    def __init__(self, target_point_1, target_point_2, target_z_height , total_time , freqeuncy  ):
         
         self.midPoint = [(target_point_1[0] + target_point_2[0])/2, (target_point_1[1] + target_point_2[1])/2, target_z_height]
         self.target_z_height = target_z_height
@@ -30,7 +30,7 @@ class forwardTrajectory(object):
         self.generatePoly()
 
 
-    def path(self, t: float):
+    def path(self, t):
         # Calculate trajectory components in 1D (along the line connecting the two points)
         x_t = self.x_t(t)
         x_prime_t = self.x_prime(t)
