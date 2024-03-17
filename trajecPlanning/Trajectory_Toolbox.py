@@ -99,6 +99,9 @@ class forwardTrajectory(object):
     def returnJustPoints(self): 
         return np.array([self.path(t)[0] for t in self.time_values])
 
+    def returnJustVel(self): 
+        return np.array([self.path(t)[1] for t in self.time_values])
+
     def createPlot(self): 
         arr = self.generatePoints()
              
