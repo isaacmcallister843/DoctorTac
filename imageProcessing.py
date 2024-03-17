@@ -3,8 +3,32 @@
 # Author: Team3
 # Date: 2024-03-08
 
+'''
+This file initiates node for image processing. 
+Subscribes to both cameras, processes images. 
+Based on image processing, code either waits for player to move, moves ECM so board is in frame,
+	or doesn't move.
+Image processing determines tictactoe matrix of play, coordinates of board, coordinates of 1 of remaining pieces
+3D Coordinates for piece-to-pick-up and spot-to-put-down are published to "coordinates_3d" topic
+
+TODO
+	- all the image processing stuff (Ben)
+	- camera calibration matrix
+	- verification (all!)
+	
+	- instead of while-looping for player to make move, maybe this should be another node?
+		- this-node gets images and sends them to some player-done task
+		- when player has moved, player-done task publishes something (like a locking mechanism)
+		- this-node subscribes to topic and finishes function when it receives topic
+
+'''
+
+
 #Random Empty File. 
 #! /usr/bin/env python
+
+
+
 
 import rospy
 from geometry_msgs.msg import Twist
@@ -23,7 +47,7 @@ import os
 import camera
 from rospy.numpy_msg import numpy_msg
 from rospy_tutorials.msg import Floats
-
+import tictactoe
 
 
 
@@ -64,24 +88,47 @@ def findDepth(ur,vr,ul,vl):
 	return(coords_3d)
 
 
-def get2DCoords():
-	#todo
-	x=1; y=2
 
-	return(x,y)
+def procImage(image):
+	#todo
+
+	#if image is not fully in frame, send 'status' to tell ECM to move
+	# 1= move y+, 2= move y-, 3=move x+, 4=move x-, 0=don't move
+	#if status=9, it isn't the robots turn yet (player still moving, player hasn't played)
+	status = 0
+
+	#array corresponding to played squares
+	#0=empty, 1=player, 2=robot
+	#indexes [1 2 3] [4 5 6] [7 8 9]
+	play_mat = [0,0,0,0,0,0,0,0,0]
+
+	#coordinate pairs of the tic-tac-toe spaces 
+	#theoretically could just do this once, but player may jostle board while playing
+	coords_2d = np.array([[[1,2], [1,2], [1,2]],
+					   [[1,2], [1,2], [1,2]],
+					   [[1,2],[1,2],[1,2]]])
+	
+	#coordinates of one of the pieces (off to the side) to pick up
+	coords_pickup = [1,2] 
+
+	return(status, play_mat, coords_2d, coords_pickup)
+
+
+def moveECM(status,p):
+	goal = p.setpoint_cp()
 
 
 def imageProcessingMain():
 
+	#create node
 	rospy.init_node('imageProc')
 
-	#iniate camera objects
+	#initiate camera objects
 	#these are subscribed to raw_images from dvrk cameras
-	#I think new images are continuously saved by objects (video esque)
-	#todo - send images to image processing task
 	left_cam = camera.camera('left')
 	right_cam = camera.camera('right')
 
+	#initiate ecm object
 	ecm = dvrk.arm('ECM')
 
 	#todo- float64 or float32?
@@ -89,14 +136,33 @@ def imageProcessingMain():
 	r = rospy.Rate(10)
 
 	while not rospy.is_shutdown():
-		#send images to camera processing
-		#image processing
+
+		#image processing function takes OpenCV image
+		status, play_mat, coords_2d, coords_pickup = procImage(right_cam.get_image())
+
+		#if image is not in frame, move ECM
+		while(status is not 0):
+			moveECM(status,ecm)
+			#look again
+			status, play_mat, coords_2dR, coords_pickupR = procImage(right_cam.get_image())
+
+		#status is 0, get left image now
+		coords_2dL, coords_pickupL = procImage(left_cam.get_image())[2:3]
+
+		ind_to_play = tictactoe.play(play_mat)
+
 		#identify piece to play (x,y) in both cameras
+		xr, yr = coords_pickupR()
+		xl, yl = coords_pickupL()
+		coords_3d_pickup = findDepth(xr,yr,xl,yl)
 
-		xr, yr = get2DCoords() #todo
-		xl, yl = get2DCoords()
+		#identify location to play (x,y) in both cameras
+		xr, yr = coords_2dR()
+		xl, yl = coords_2dL()
+		coords_3d_putdown = findDepth(xr,yr,xl,yl)
 
-		coords_3d = findDepth(xr,yr,xl,yl)
+		#combine into 1x6 array [pickup_coords, putdown_coords]
+		coords_3d = np.concatenate((coords_3d_pickup, coords_3d_putdown), axis=None)
 
 		pub.publish(coords_3d)
 		r.sleep()
