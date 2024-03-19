@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-# Author: Team3
+# Author: Sayem/Bobsy Narayan
+#Camera Function Class + camera test
 # Date: 2024-03-08
 
 #Random Empty File. 
@@ -15,7 +16,7 @@ from geometry_msgs.msg import TransformStamped
 from std_msgs.msg import String
 import cv2
 import numpy as np
-import xlsxwriter
+#import xlsxwriter
 import dvrk 
 import sys
 from scipy.spatial.transform import Rotation as R
@@ -23,7 +24,8 @@ import os
 
 class camera:
 
-	def __init__(self, camera_name, ros_namespace = '/dVRK/'):
+	#def __init__(self, camera_name, ros_namespace = '/dVRK/'):
+	def __init__(self, camera_name, ros_namespace = '/stereo/'):
 
 		self.__camera_name = camera_name
 		self.__ros_namespace = ros_namespace
@@ -33,7 +35,8 @@ class camera:
 		self.image_path = os.path.abspath(os.getcwd()) + '/Images/'
 
 
-		full_ros_namespace = self.__ros_namespace + self.__camera_name + '/decklink/camera'
+		#full_ros_namespace = self.__ros_namespace + self.__camera_name + '/decklink/camera'
+		full_ros_namespace = self.__ros_namespace + self.__camera_name + '/image_raw'
 
 		#subscriber
 		rospy.Subscriber(full_ros_namespace+ '/image_raw', Image, self.image_callback, queue_size = 1, buff_size = 1000000)
@@ -59,3 +62,8 @@ class camera:
 			return True
 		else:
 			return False
+
+if __name__ == '__main__':
+	left_cam=camera('left')
+	left_cam.get_image()
+	left_cam.save_image()
