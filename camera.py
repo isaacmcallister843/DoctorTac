@@ -39,7 +39,7 @@ class camera:
 		full_ros_namespace = self.__ros_namespace + self.__camera_name + '/image_raw'
 
 		#subscriber
-		rospy.Subscriber(full_ros_namespace+ '/image_raw', Image, self.image_callback, queue_size = 1, buff_size = 1000000)
+		rospy.Subscriber(full_ros_namespace, Image, self.image_callback, queue_size = 1, buff_size = 1000000)
 
 	def image_callback(self, data):
 
