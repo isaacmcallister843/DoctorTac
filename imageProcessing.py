@@ -90,17 +90,25 @@ def findDepth(ur,vr,ul,vl):
 
 
 def procImage(image):
+	
+	
+
+	
 	#todo
+
 
 	#if image is not fully in frame, send 'status' to tell ECM to move
 	# 1= move y+, 2= move y-, 3=move x+, 4=move x-, 0=don't move
 	#if status=9, it isn't the robots turn yet (player still moving, player hasn't played)
 	status = 0
 
+	if(status is not 0):
+		return status
+
 	#array corresponding to played squares
-	#0=empty, 1=player, 2=robot
-	#indexes [1 2 3] [4 5 6] [7 8 9]
-	play_mat = [0,0,0,0,0,0,0,0,0]
+	board = [[' ']*3 for _ in range(3)]
+
+	player = 'X' #determine if player is X or O (based on first move)
 
 	#coordinate pairs of the tic-tac-toe spaces 
 	#theoretically could just do this once, but player may jostle board while playing
@@ -111,11 +119,36 @@ def procImage(image):
 	#coordinates of one of the pieces (off to the side) to pick up
 	coords_pickup = [1,2] 
 
-	return(status, play_mat, coords_2d, coords_pickup)
+	return status, board, coords_2d, coords_pickup, player
 
 
-def moveECM(status,p):
-	goal = p.setpoint_cp()
+def moveECM(status,ecm,r):
+
+	#start position
+	goal = ecm.setpoint_cp()
+
+	if status is 9:
+		r.sleep() #player hasn't finished playing, just sleep
+	elif status is 1:
+		goal.p[1] += 0.05 #move 5cm +y
+	elif status is 2:
+		goal.p[1] -= 0.05 #move 5cm -y
+	elif status is 3:
+		goal.p[0] += 0.05 #move 5cm +x
+	elif status is 2:
+		goal.p[0] -= 0.05 #move 5cm -x
+
+	ecm.move_cp(goal).wait()
+
+	
+
+
+def end_game(winner):
+	i=0
+	#todo
+	#winner = 1 -> player won
+	#winner = 2 -> computer won
+	#winner = 3 -> draw
 
 
 def imageProcessingMain():
@@ -138,32 +171,36 @@ def imageProcessingMain():
 	while not rospy.is_shutdown():
 
 		#image processing function takes OpenCV image
-		status, play_mat, coords_2d, coords_pickup = procImage(right_cam.get_image())
+		status, board, coords_2dR, coords_pickupR, player = procImage(right_cam.get_image())
 
 		#if image is not in frame, move ECM
 		while(status is not 0):
-			moveECM(status,ecm)
+			moveECM(status,ecm,r)
 			#look again
-			status, play_mat, coords_2dR, coords_pickupR = procImage(right_cam.get_image())
+			status, board, coords_2dR, coords_pickupR, player = procImage(right_cam.get_image())
 
 		#status is 0, get left image now
-		coords_2dL, coords_pickupL = procImage(left_cam.get_image())[2:3]
+		_, _, coords_2dL, coords_pickupL, _ = procImage(left_cam.get_image())
 
-		ind_to_play = tictactoe.play(play_mat)
+		#play tictactoe
+		ind_to_play, winner = tictactoe.play(board, player)
+
+		#someone has won game or draw. end game sequence
+		if(winner is not 0):
+			end_game()
 
 		#identify piece to play (x,y) in both cameras
-		xr, yr = coords_pickupR()
-		xl, yl = coords_pickupL()
-		coords_3d_pickup = findDepth(xr,yr,xl,yl)
+		coords_3d_pickup = findDepth(coords_pickupR[0], coords_pickupR[1],
+							   coords_pickupL[0], yl = coords_pickupL[1])
 
 		#identify location to play (x,y) in both cameras
-		xr, yr = coords_2dR()
-		xl, yl = coords_2dL()
+		xr, yr = coords_2dR[ind_to_play]
+		xl, yl = coords_2dL[ind_to_play]
 		coords_3d_putdown = findDepth(xr,yr,xl,yl)
+
 
 		#combine into 1x6 array [pickup_coords, putdown_coords]
 		coords_3d = np.concatenate((coords_3d_pickup, coords_3d_putdown), axis=None)
-
 		pub.publish(coords_3d)
 		r.sleep()
 

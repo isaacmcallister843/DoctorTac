@@ -7,47 +7,97 @@
 #! /usr/bin/env python
 
 
-
-import numpy as np
+#note: this is a modified version of ChatGPT code
 
 import random
 
 
-def subArr(A,B):
-	if(A==B):
-		return True
-	
-	for i in range(len(A) - len(B)):
-		if A[i:i+len(B)] == B:
-			return True
+def check_winner(board, player):
+    # Check rows
+    for row in board:
+        if all(cell == player for cell in row):
+            return True
 
-#array corresponding to played suares
-#0=empty, 1=player, 2=robot
-def play(mat):
- 	
-	#just brute force a match. feel free to replace this with a smarter algorithm.
-	#only for cases where player or robot is about to win (2 of same number in a row/column/cross)
-	if(subArr(mat[0:3],[1,1,0]) or subArr(mat[0:3],[2,2,0])):
-		return 2
-	if(subArr(mat[0:3],[1,0,1]) or subArr(mat[0:3],[2,2,0])):
-		return 1
-	if(subArr(mat[0:3],[0,1,1]) or subArr(mat[0:3],[2,2,0])):
-		return 0
-	if(subArr(mat[3:6],[1,1,0]) or subArr(mat[0:3],[2,2,0])):
-		return 5
-	if(subArr(mat[3:6],[1,0,1]) or subArr(mat[0:3],[2,2,0])):
-		return 4
-	if(subArr(mat[3:6],[0,1,1]) or subArr(mat[0:3],[2,2,0])):
-		return 3
-	#etc
-	#for columns:
-	if(subArr([mat[0], mat[3], mat[6]],[1,1,0]) or subArr(mat[0:3],[2,2,0])):
-		return 999
-	#etc
+    # Check columns
+    for col in range(3):
+        if all(board[row][col] == player for row in range(3)):
+            return True
 
-	#if no close-win scenario, pick a random spot
-	r = random.random(0,9)
-	while(mat[r] is not 0):
-		r = random.random(0,9) #keep picking until spot is empty
-	
-	return r
+    # Check diagonals
+    if all(board[i][i] == player for i in range(3)) or all(board[i][2-i] == player for i in range(3)):
+        return True
+
+    return False
+
+def check_draw(board):
+    for row in board:
+        for cell in row:
+            if cell == ' ':
+                return False
+    return True
+
+def computer_move(board, computer):
+    # Check if computer can win in the next move
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] == ' ':
+                board[i][j] = computer
+                if check_winner(board, computer):
+                    return (i, j)
+                board[i][j] = ' '
+
+    # Check if player can win in the next move
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] == ' ':
+                board[i][j] = 'X'  # Assume player's move
+                if check_winner(board, 'X'):
+                    board[i][j] = computer
+                    return (i, j)
+                board[i][j] = ' '
+
+    # Try to take corners
+    corners = [(0, 0), (0, 2), (2, 0), (2, 2)]
+    random.shuffle(corners)
+    for corner in corners:
+        if board[corner[0]][corner[1]] == ' ':
+            return corner
+
+    # Try to take center
+    if board[1][1] == ' ':
+        return (1, 1)
+
+    # Take any available edge
+    edges = [(0, 1), (1, 0), (1, 2), (2, 1)]
+    random.shuffle(edges)
+    for edge in edges:
+        if board[edge[0]][edge[1]] == ' ':
+            return edge
+
+def play(board, player):
+	#board = [[' ']*3 for _ in range(3)]
+     
+	#set computer variable oposite to player
+	computer = 'O' if player == 'X' else 'X'
+
+	#check if player has won
+	if check_winner(board, player):
+		return [0,0], 1
+     
+	#program to determine which space robot should place 
+	row, col = computer_move(board, computer)
+	space_to_play = [row, col]
+     
+	board[row][col] = computer
+    
+	#check if computer has won
+	if check_winner(board, player):
+		return space_to_play, 2
+
+	#check if draw
+	if check_draw(board):
+		return space_to_play, 3
+    
+	#no winner yet, continue play
+	return space_to_play, 0
+
