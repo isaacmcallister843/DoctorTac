@@ -51,11 +51,11 @@ def jacobianCallback(msg):
 	jacobian_val =  jac_array 
 
 
-def listen_jacobian(): 
-		rospy.Subscriber('PSM1/body/jacobian', Float64MultiArray, jacobianCallback)
-		time.sleep(.01)
+# def listen_jacobian(): 
+# 		rospy.Subscriber('PSM1/body/jacobian', Float64MultiArray, jacobianCallback)
+# 		time.sleep(.01)
 
-listen_jacobian()
+rospy.Subscriber('PSM1/body/jacobian', Float64MultiArray, jacobianCallback)
 
 
 if jacobian_val is not None: 
@@ -80,8 +80,9 @@ p.move_cp(goal).wait()
 q_0 = p.measured_jp()
 current_q = q_0
 
+# No height correction 
+
 for i in range(len(points)): 
-	listen_jacobian()
 	v = np.append(vel[i], [[0], [0], [0]], axis=0) # this probably wrong 
 
 
