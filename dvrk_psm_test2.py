@@ -78,7 +78,19 @@ goal.p = home_start_location
 p.move_cp(goal).wait()
 
 q_0 = p.measured_jp()
-print(q_0)
+current_q = q_0
+
+for i in range(len(points)): 
+	listen_jacobian()
+	v = np.append(vel[i], [[0], [0], [0]], axis=0) # this probably wrong 
+
+
+	q_dot = np.linalg.inv(jacobian_val) * v  
+
+	current_q = current_q + q_dot * 4/100 
+
+	# reformat slightly 
+	p.move_jp(current_q).wait()  
 
 
 
