@@ -39,7 +39,7 @@ from geometry_msgs.msg import TransformStamped
 import std_msgs
 import cv2
 import numpy as np
-import xlsxwriter
+#import xlsxwriter Not necessary for our code and requires a second installation
 import dvrk 
 import sys
 from scipy.spatial.transform import Rotation as R
@@ -49,12 +49,20 @@ from rospy.numpy_msg import numpy_msg
 from rospy_tutorials.msg import Floats
 import tictactoe
 
+class boardsquare:
+	def __init__(self,x_coord,y_coord,tile) -> None:
+		self.x_coord=x_coord
+		self.y_coord=y_coord
+		self.tile=tile
+	def isFull(self)->bool:
+		return not (self.tile is None)
 
 
 #Function is used to turn 2d coordinates into 3d coordinates
 def findDepth(ur,vr,ul,vl):
 
-	#need to do calibration using lab scripts.
+	#need to do calibration using lab scripts. 
+	#Found by using camera calibration scripts that are used to find intrinsic and extrinsic camera matrices
 	calib_matrix = np.array([[1,2,3,4],
 				 [5,6,7,8],
 				 [9, 10, 11, 12,]])
@@ -62,6 +70,7 @@ def findDepth(ur,vr,ul,vl):
 
 	#use qr factorization to get intrinsic and extrinsic matrices
 	#(returns Q,R which are 3x3 matrixes. R is upper-triangular meaning its the intrinsic matrix)
+	#A (matrix) is decomposed into QR, where Q is orthogonal matrix and R is upper triangle matrix.
 	ext_matrix_left, int_matrix_left = np.linalg.qr(calib_matrix[0:3,0:3], mode='reduced')
 	ext_matrix_right, int_matrix_right = np.linalg.qr(calib_matrix[0:3,0:3], mode='reduced')
 	
@@ -90,12 +99,7 @@ def findDepth(ur,vr,ul,vl):
 
 
 def procImage(image):
-	
-	
-
-	
 	#todo
-
 
 	#if image is not fully in frame, send 'status' to tell ECM to move
 	# 1= move y+, 2= move y-, 3=move x+, 4=move x-, 0=don't move
@@ -106,21 +110,24 @@ def procImage(image):
 		return status
 
 	#array corresponding to played squares
-	board = [[' ']*3 for _ in range(3)]
-
-	player = 'X' #determine if player is X or O (based on first move)
-
-	#coordinate pairs of the tic-tac-toe spaces 
+	#Board will be initialized using read board to get the x and y coordinates of board and place it in board array.
 	#theoretically could just do this once, but player may jostle board while playing
-	coords_2d = np.array([[[1,2], [1,2], [1,2]],
-					   [[1,2], [1,2], [1,2]],
-					   [[1,2],[1,2],[1,2]]])
+	for row in range(3):
+		for column in range(3):
+			#board[row][column]=boardsquare(readboard(),None)
+			board=0
 	
+	#use image detection to see what is on board. & determine if player is X or O (based on first move)
+	#if player is None:
+		#player=readboardforplayer
+	player = 'X' 
+
 	#coordinates of one of the pieces (off to the side) to pick up
+	#coord_pickup=readboardforpiece()
 	coords_pickup = [1,2] 
 
-	return status, board, coords_2d, coords_pickup, player
-
+	#return status, board, np.array([[(board[row][col].x_coord, board[row][col].y_coord) for col in range(3)] for row in range(3)]), coords_pickup, player
+	return status, board, np.array([[[1,2], [1,2], [1,2]], [[1,2], [1,2], [1,2]],[[1,2],[1,2],[1,2]]]), coords_pickup, player
 
 def moveECM(status,ecm,r):
 
@@ -143,13 +150,17 @@ def moveECM(status,ecm,r):
 	
 
 
-def end_game(winner):
+def end_game (winner):
 	i=0
-	#todo
-	#winner = 1 -> player won
-	#winner = 2 -> computer won
-	#winner = 3 -> draw
-
+	#Move ecm to home position
+	if winner is 1:
+		print("Player Won")
+	elif winner is 2:
+		print("DVRK Won")
+	elif winner is 3:
+		print("Draw Game")
+	else:
+		("Unknown Value inputed")
 
 def imageProcessingMain():
 
@@ -158,6 +169,7 @@ def imageProcessingMain():
 
 	#initiate camera objects
 	#these are subscribed to raw_images from dvrk cameras
+	#Creates nodes that subscribes to camera image publisher node
 	left_cam = camera.camera('left')
 	right_cam = camera.camera('right')
 
@@ -165,6 +177,7 @@ def imageProcessingMain():
 	ecm = dvrk.arm('ECM')
 
 	#todo- float64 or float32?
+	#Note: I got rate to be like 10000 from TA, might want to consider increasing?
 	pub = rospy.Publisher('coordinates_3d', numpy_msg(Floats), queue_size=10)
 	r = rospy.Rate(10)
 
@@ -187,7 +200,7 @@ def imageProcessingMain():
 
 		#someone has won game or draw. end game sequence
 		if(winner is not 0):
-			end_game()
+			end_game(winner)
 
 		#identify piece to play (x,y) in both cameras
 		coords_3d_pickup = findDepth(coords_pickupR[0], coords_pickupR[1],
