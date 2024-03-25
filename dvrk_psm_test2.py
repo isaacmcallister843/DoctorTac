@@ -29,7 +29,7 @@ import argparse
 import time
 from std_msgs.msg import Float64MultiArray
 
-sys.path.append("trajecPlanning/")
+sys.path.append("/home/fizzer/catkin_ws/src/dvrk-ros/dvrk_python/scripts/trajecPlanning/")
 import Trajectory_Toolbox
 
 p = dvrk.psm('PSM1') 
@@ -68,32 +68,46 @@ print("-------")
 Further Testing
 '''
 
-newPath = Trajectory_Toolbox.forwardTrajectory((-.1,.1,0), (.2, .14, 0), target_z_height = .3, total_time = 4, freqeuncy = 100)
+newPath = Trajectory_Toolbox.forwardTrajectory((0,.2, .0), (0, .04, 0), target_z_height = .02, total_time = 2, freqeuncy = 40)
 points = newPath.returnJustPoints() 
 vel = newPath.returnJustVel()
+vel[:, 2] = vel[:, 2] * -1
 
-home_start_location = PyKDL.Vector(-.1,.1,-.1135)
+home_start_location = PyKDL.Vector(0,.2,-.1135)
 goal = p.measured_cp()
 goal.p = home_start_location
 p.move_cp(goal).wait()
 
+time.sleep(.5)
 q_0 = p.measured_jp()
 current_q = q_0
 
 # No height correction 
 
+print(q_0)
+print("-----------------")
+print("Moved To home")
+time.sleep(1)
+
 for i in range(len(points)): 
-	v = np.append(vel[i], [[0], [0], [0]], axis=0) # this probably wrong 
+	
+	v = np.append(vel[i], [0, 0, 0], axis=0) # this probably wrong 
+	
+	q_dot = np.dot(np.linalg.inv(jacobian_val), v)
+	#q_dot = np.linalg.inv(jacobian_val) * v 
 
-
-	q_dot = np.linalg.inv(jacobian_val) * v  
-
-	current_q = current_q + q_dot * 4/100 
-
+	current_q = current_q + q_dot * 2/40
+	#print(current_q)
+	print(jacobian_val)
+	print("-----")
 	# reformat slightly 
-	p.move_jp(current_q).wait()  
+	p.move_jp(current_q).wait()
+	#time.sleep(.00001)
+	print("Moved: ", i)
 
-
+print("------------------------")
+print(p.measured_cp())
+print(points[-1])
 
 
 """
