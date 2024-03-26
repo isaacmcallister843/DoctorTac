@@ -61,36 +61,55 @@ class boardsquare:
 #Function is used to turn 2d coordinates into 3d coordinates
 def findDepth(ur,vr,ul,vl):
 
-	#need to do calibration using lab scripts. 
-	#Found by using camera calibration scripts that are used to find intrinsic and extrinsic camera matrices
-	calib_matrix = np.array([[1,2,3,4],
-				 [5,6,7,8],
-				 [9, 10, 11, 12,]])
+	#Calibration from lab (do not edit):
+	calib_matrixR = np.array([[1996.53569, 0, 936.08872, -11.36134],
+				 [0, 1996.53569, 459.10171, 0],
+				 [0, 0, 1, 0,]])
 	
-
+	calib_matrixL = np.array([[1996.53569, 0, 936.08872, 0],
+				[0, 1996.53569, 459.10171, 0],
+				[0, 0, 1, 0,]])
+	
+	#^^ the ros code for these outputs = [ fx' 0 cx' Tx
+	#									0 fy' cy' Ty
+	#									0 0 1 0]
+	# (see sensor_msgs/CameraInfro Message)
+	# So we don't need to decompose anything (red comments below) as we usually would need to
+	#instead:
+	fx = calib_matrixL[0][0]
+	fy = calib_matrixL[1][1]
+	ox = calib_matrixL[0][2]
+	oy = calib_matrixL[1][2]
+	b = -(calib_matrixR[0][3]/fx) #Tx = -fx' * B according to documentation
+	
+	'''
 	#use qr factorization to get intrinsic and extrinsic matrices
 	#(returns Q,R which are 3x3 matrixes. R is upper-triangular meaning its the intrinsic matrix)
 	#A (matrix) is decomposed into QR, where Q is orthogonal matrix and R is upper triangle matrix.
-	ext_matrix_left, int_matrix_left = np.linalg.qr(calib_matrix[0:3,0:3], mode='reduced')
-	ext_matrix_right, int_matrix_right = np.linalg.qr(calib_matrix[0:3,0:3], mode='reduced')
+
+	ext_matrix_left, int_matrix_left = np.linalg.qr(calib_matrixL[0:3,0:3], mode='reduced')
+	ext_matrix_right, int_matrix_right = np.linalg.qr(calib_matrixR[0:3,0:3], mode='reduced')
 	
-	t_matrix = np.linalg.inv(int_matrix_right)*calib_matrix[:,3]
-
-	#if right camera is the main camera
-	#then difference btw them is tx of left camera
-	b = t_matrix[0]
-
-	#I'm not sure if fx is supposed to be left or right camera or if theyre identical
 	fx = int_matrix_right[0][0]
 	fy = int_matrix_right[1][1]
 	ox = int_matrix_right[0][2]
 	oy = int_matrix_right[1][2]
+
+	t_matrix = np.linalg.inv(int_matrix_right)*calib_matrixR[:,3]
+
+	#if right camera is the main camera
+	#then difference btw them is tx of left camera
+	b = t_matrix[0]
+	'''
 
 	#image processing give (u,v) of both cameras
 	#(ur,vr) for right camera; (ul,vl) for left;
 	x = (b*(ul-ox)/(ul-ur))
 	y = (b*fx*(vl-oy)/(fy*(ul-ur)))
 	z = (b*fx/(ul-ur))
+
+	#shift x so its between the two cameras
+	x -= (b/2)
 
 	coords_3d = np.array([x, y, z], dtype=np.float32)
 
@@ -216,6 +235,83 @@ def imageProcessingMain():
 		coords_3d = np.concatenate((coords_3d_pickup, coords_3d_putdown), axis=None)
 		pub.publish(coords_3d)
 		r.sleep()
+
+
+#I turned it into a class in order to have the callback function working appropriately with the new topic subscribe
+class imageProcessingMain():
+
+	def __init__(self, r):
+		#create node
+		rospy.init_node('imageProc')
+
+		#initiate camera objects
+		#these are subscribed to raw_images from dvrk cameras
+		self.left_cam = camera.camera('left')
+		self.right_cam = camera.camera('right')
+
+		#initiate ecm object
+		self.ecm = dvrk.arm('ECM')
+
+		#todo- float64 or float32?
+		self.pub = rospy.Publisher('coordinates_3d', numpy_msg(Floats), queue_size=10)
+
+		self.r = r
+
+		#Subscribe to arm node so we know when its ready for next movement
+		#rospy.Subscriber('ready_state', todo message type, self.image_callback, queue_size = 1, buff_size = 1000000)
+
+	def image_callback(self, data):
+		#image processing function takes OpenCV image
+		status, board, coords_2dR, coords_pickupR, player = procImage(self.right_cam.get_image())
+
+		#if image is not in frame, move ECM
+		while(status is not 0):
+			moveECM(status,self.ecm,self.r)
+			#look again
+			status, board, coords_2dR, coords_pickupR, player = procImage(self.right_cam.get_image())
+
+		#status is 0, get left image now
+		_, _, coords_2dL, coords_pickupL, _ = procImage(self.left_cam.get_image())
+
+		#play tictactoe
+		ind_to_play, winner = tictactoe.play(board, player)
+
+		#someone has won game or draw. end game sequence
+		if(winner is not 0):
+			end_game()
+
+		#identify piece to play (x,y) in both cameras
+		coords_3d_pickup = findDepth(coords_pickupR[0], coords_pickupR[1],
+								coords_pickupL[0], yl = coords_pickupL[1])
+
+		#identify location to play (x,y) in both cameras
+		xr, yr = coords_2dR[ind_to_play]
+		xl, yl = coords_2dL[ind_to_play]
+		coords_3d_putdown = findDepth(xr,yr,xl,yl)
+
+
+		#combine into 1x6 array [pickup_coords, putdown_coords]
+		coords_3d = np.concatenate((coords_3d_pickup, coords_3d_putdown), axis=None)
+		self.pub.publish(coords_3d)
+
+		
+
+if __name__ == "__main__":
+
+	r = rospy.Rate(10)
+
+	ob = imageProcessingMain(r)
+
+	while not rospy.is_shutdown():
+		
+		r.sleep()
+
+
+
+
+
+
+
 
 
 

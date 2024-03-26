@@ -39,8 +39,6 @@ class camera:
 		full_ros_namespace = self.__ros_namespace + self.__camera_name + '/image_raw'
 
 		#subscriber
-		rospy.init_node("Camera_call")	
-		rospy.Rate(10000)
 		rospy.Subscriber(full_ros_namespace, Image, self.image_callback, queue_size = 1, buff_size = 1000000)
 
 	def image_callback(self, data):
@@ -73,5 +71,7 @@ class camera:
 			
 
 if __name__ == '__main__':
+	rospy.init_node("Camera_call")	
+	rospy.Rate(10000)
 	left_cam=camera('left')
 	rospy.spin()
