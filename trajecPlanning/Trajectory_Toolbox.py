@@ -2,7 +2,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-
+# bbad code 
 class forwardTrajectory(object):
     
     def __init__(self, target_point_1, target_point_2, target_z_height , total_time , freqeuncy  ):
