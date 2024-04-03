@@ -4,7 +4,6 @@
 #Camera Function Class + camera test
 # Date: 2024-03-08
 
-
 import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image, CompressedImage
@@ -25,20 +24,23 @@ class camera:
 
 	#def __init__(self, camera_name, ros_namespace = '/dVRK/'):
 	def __init__(self, camera_name, ros_namespace = '/stereo/'):
-
+		#camera name is left or right camera of DVRK
 		self.__camera_name = camera_name
+		#if simulator, we use stereo. if real DVRK, we use /dvrk/
 		self.__ros_namespace = ros_namespace
 		self.bridge = CvBridge()
 		self.cv_image = []
 		self.image_count = 1
+		#Path where images will be saved. Should be changed
 		self.image_path = os.path.abspath(os.getcwd()) + '/Images/'
 
 
 
 		#full_ros_namespace = self.__ros_namespace + self.__camera_name + '/decklink/camera'
+		#full namespace is stereoORdVRK/leftORRight/decklinkORImageRaw
 		full_ros_namespace = self.__ros_namespace + self.__camera_name + '/image_raw'
 
-		#subscriber
+		#subscribe to ros node that publishes images from the ECM
 		rospy.Subscriber(full_ros_namespace, Image, self.image_callback, queue_size = 1, buff_size = 1000000)
 
 	def image_callback(self, data):
@@ -60,6 +62,8 @@ class camera:
 	def save_image(self):
 
 		if self.cv_image.size != 0:
+			#Should have been able to do this using image_path, but can't figure it out
+			#Right now saves to main ROS folder
 			#cv2.imwrite(self.image_path + self.__camera_name+"/"+self.__camera_name+"_Camera" +"_" + str(self.image_count)+".png", self.cv_image)
 			cv2.imwrite('/home/fizzer/catkin_ws/src/dvrk-ros/dvrk_python/Images'+str(self.image_count)+'.png',self.cv_image)
 			self.image_count = self.image_count + 1
