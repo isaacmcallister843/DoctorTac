@@ -40,14 +40,11 @@ import std_msgs
 import cv2 #Vision toolbox
 import numpy as np #Matrix toolbox
 import Player #Bens vision code
-#import xlsxwriter Not necessary for our code and requires a second installation
 import dvrk #DVRK toolbox
 import sys
 from scipy.spatial.transform import Rotation as R
 import os
-import camera #Bobsys DVRK camera code
-from rospy.numpy_msg import numpy_msg
-#from rospy_tutorials.msg import Floats
+import camera # DVRK camera code
 import tictactoe
 
 #Constants for MoveECM function & status variable
@@ -56,71 +53,16 @@ rightBoundary 	= -150
 upperBoundary 	= 150
 lowerBoundary 	= -150
 
-
-#Code is getting messy. We have two tictactoe functions, and loaded files on multiple different files that won't run when imported.
-#Ben, Mack, Bobsy, lets meet/discuss camera.py, player.py, imageProccessing.py initializations + Framework
-#Player.py initializations arent added into this file
-
+#keeps track of coordinates and value (X,O,blank)
 class boardsquare:
 	def __init__(self,x_coord,y_coord,tile):
 		self.x_coord=x_coord
 		self.y_coord=y_coord
-		self.tile=tile
+		self.tile=tile #X,O,blank
+
 	def isFull(self):
 		return not (self.tile is None)
-
-class imageProcessingMain():
-
-	def __init__(self, r):
-		#create node
-		rospy.init_node('imageProc')
-		#initiate camera objects - these are subscribed to raw_images from dvrk cameras
-		self.left_cam = camera.camera('left')
-		self.right_cam = camera.camera('right')
-		#initiate ecm object
-		self.ecm = dvrk.arm('ECM')
-		#todo- float64 or float32?
-		#self.pub = rospy.Publisher('coordinates_3d', numpy_msg(Floats), queue_size=10)
-		self.r = rospy.Rate(10)
-
-		#Subscribe to arm node so we know when its ready for next movement
-		#rospy.Subscriber('ready_state', todo message type, self.image_callback, queue_size = 1, buff_size = 1000000)
-
-		#Should we initiate self.status? self.board?
-		print("image proc initizalized")
-	def image_callback(self, data):
-		#image processing function takes OpenCV image
-		status, board, coords_2dR, coords_pickupR, player = procImage(self.right_cam.get_image())
-
-		#if image is not in frame, move ECM
-		while(status is not 0):
-			moveECM(status,self.ecm,self.r)
-			#look again
-			status, board, coords_2dR, coords_pickupR, player = procImage(self.right_cam.get_image())
-
-		#status is 0, get left image now
-		_, _, coords_2dL, coords_pickupL, _ = procImage(self.left_cam.get_image())
-
-		#play tictactoe
-		ind_to_play, winner = tictactoe.play(board, player)
-
-		#someone has won game or draw. end game sequence
-		if(winner is not 0):
-			end_game()
-
-		#identify piece to play (x,y) in both cameras
-		coords_3d_pickup = findDepth(coords_pickupR[0], coords_pickupR[1],
-								coords_pickupL[0], yl = coords_pickupL[1])
-
-		#identify location to play (x,y) in both cameras
-		xr, yr = coords_2dR[ind_to_play]
-		xl, yl = coords_2dL[ind_to_play]
-		coords_3d_putdown = findDepth(xr,yr,xl,yl)
-
-
-		#combine into 1x6 array [pickup_coords, putdown_coords]
-		coords_3d = np.concatenate((coords_3d_pickup, coords_3d_putdown), axis=None)
-		#self.pub.publish(coords_3d)
+		
 
 #Function is used to turn 2d coordinates into 3d coordinates
 def findDepth(ur,vr,ul,vl):
@@ -246,16 +188,58 @@ def end_game (winner):
 	else:
 		("Unknown Value inputed")
 
-if __name__ == "__main__":
-		
-	r = 100
 
-	ob = imageProcessingMain(r)
-	data=0
-	ob.image_callback(data) #I don't think it needs data
+if __name__ == "__main__":
+
+	#create node
+	rospy.init_node('imageProc')
+
+	#initiate camera objects - these are subscribed to raw_images from dvrk cameras
+	left_cam = camera.camera('left')
+	right_cam = camera.camera('right')
+
+	#initiate ecm object
+	ecm = dvrk.arm('ECM')
+
+	r = rospy.Rate(100)
+
+	print("started node")
 
 	while not rospy.is_shutdown():
 		
+		#image processing function takes OpenCV image
+		status, board, coords_2dR, coords_pickupR, player = procImage(right_cam.get_image())
+
+		#if image is not in frame, move ECM
+		while(status is not 0):
+			moveECM(status,ecm, r)
+			#look again
+			status, board, coords_2dR, coords_pickupR, player = procImage(right_cam.get_image())
+
+		#status is 0, get left image now
+		_, _, coords_2dL, coords_pickupL, _ = procImage(left_cam.get_image())
+
+		#play tictactoe
+		ind_to_play, winner = tictactoe.play(board, player)
+
+		#someone has won game or draw. end game sequence
+		if(winner is not 0):
+			end_game()
+
+		#identify piece to play (x,y) in both cameras
+		coords_3d_pickup = findDepth(coords_pickupR[0], coords_pickupR[1],
+								coords_pickupL[0], yl = coords_pickupL[1])
+
+		#identify location to play (x,y) in both cameras
+		xr, yr = coords_2dR[ind_to_play]
+		xl, yl = coords_2dL[ind_to_play]
+		coords_3d_putdown = findDepth(xr,yr,xl,yl)
+
+
+		#combine into 1x6 array [pickup_coords, putdown_coords]
+		coords_3d = np.concatenate((coords_3d_pickup, coords_3d_putdown), axis=None)
+		#self.pub.publish(coords_3d)
+
 		r.sleep()
 
 
