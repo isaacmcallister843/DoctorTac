@@ -39,9 +39,11 @@ class TrajctoryNode(object):
         """
         jac_data = np.array(msg.data)
         self.jacobian_val = jac_data.reshape((6, 6))
-        # You can add additional processing of the Jacobian data here if needed.
 
     def returnHome(self): 
+    	"""
+		Go back to neutral locaiton  
+    	"""
     	self.zAdjust(self.defualtZLayer)
         currentPos = self.currentLocation
         print(currentPos)
@@ -90,6 +92,9 @@ class TrajctoryNode(object):
         self.currentLocation = self.p.measured_cp().p
 
     def zAdjust(self, targetZLevel): 
+    	"""
+		Just changes Z level  
+    	"""
         downLocation = PyKDL.Vector(self.currentLocation[0],self.currentLocation[1],targetZLevel)
         goal = self.p.measured_cp()
         goal.p = downLocation
@@ -109,15 +114,43 @@ class TrajctoryNode(object):
     	"""
 		Go to pick Location 
     	"""
+    	self.zAdjust(zHeight)
     	firstPath = Trajectory_Toolbox.forwardTrajectory((self.currentLocation[0],self.currentLocation[1], 0), (pickLocation[0], pickLocation[1], 0), 
     		target_z_height = .02, total_time = totalTime, freqeuncy = freqeuncy)
     	self.exicutePath(firstPath)
+
+    	"""
+		Pickup Target 
+    	"""	
     	self.p.jaw.open()
-    	self.zAdjust(self.currentLocation[2] - extenstionHeight)
+    	self.zAdjust(zHeight- extenstionHeight)
+    	time.sleep(.5)
+    	self.p.jaw.close()
+    	time.sleep(1)
+    	self.zAdjust(zHeight)
 
+    	"""
+		Go to place location  
+    	"""
+    	secondPath = Trajectory_Toolbox.forwardTrajectory((self.currentLocation[0],self.currentLocation[1], 0), (placeLocation[0], placeLocation[1], 0), 
+    		target_z_height = .02, total_time = totalTime, freqeuncy = freqeuncy)
+    	self.exicutePath(secondPath)
 
-		# Extend Hands 
-        time.sleep(1)
+    	"""
+		Place Target 
+    	"""
+    	self.zAdjust(zHeight- extenstionHeight)
+    	time.sleep(.5)
+    	self.p.jaw.open()
+    	time.sleep(.5)
+    	self.zAdjust(zHeight)
+    	self.p.jaw.close()
+
+    	"""
+		Rehome 
+    	"""
+    	self.returnHome()
+
 
     def spin(self):
         """
@@ -130,7 +163,7 @@ if __name__ == '__main__':
         TrajctoryNode = TrajctoryNode(homeLocation = (.14,.1, 0))
         TrajctoryNode.returnHome()
         time.sleep(.5)
-        TrajctoryNode.pickAndPlace(pickLocation = (0,.1), placeLocation = (0,0))
+        TrajctoryNode.pickAndPlace(pickLocation = (0,.1), placeLocation = (0,-.1))
         
         # TrajctoryNode.spin()
     except rospy.ROSInterruptException:

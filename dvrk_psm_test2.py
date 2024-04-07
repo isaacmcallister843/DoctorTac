@@ -36,7 +36,6 @@ p = dvrk.psm('PSM1')
 p.enable()
 p.home()
 
-
 '''
 Jacobian Set
 ''' 
@@ -68,46 +67,142 @@ print("-------")
 Further Testing
 '''
 
-newPath = Trajectory_Toolbox.forwardTrajectory((0,.2, .0), (0, .04, 0), target_z_height = .02, total_time = 2, freqeuncy = 40)
+totalTime = 1.1
+freq = 50
+zLayer = -.1135
+extensionHeight = .03
+
+newPath = Trajectory_Toolbox.forwardTrajectory((.14,.1, 0), (.0, -.1,  0), target_z_height = .02, total_time = totalTime, freqeuncy = freq)
+#newPath.createPlot()
 points = newPath.returnJustPoints() 
 vel = newPath.returnJustVel()
 vel[:, 2] = vel[:, 2] * -1
 
-home_start_location = PyKDL.Vector(0,.2,-.1135)
+home_start_location = PyKDL.Vector(points[0][0], points[0][1], zLayer)
+goal = p.measured_cp()
+goal.p = home_start_location
+p.move_cp(goal).wait()
+time.sleep(.5)
+
+print("Starting From: ", p.measured_cp())
+print("Going Too: ", points[-1])
+
+
+print("Verifying final location: ----------")
+finalLocation = PyKDL.Vector(points[-1][0], points[-1][1],zLayer)
+goal = p.measured_cp()
+goal.p = finalLocation
+p.move_cp(goal).wait()
+time.sleep(1.5)
+
+print("Returning to home: ")
+goal = p.measured_cp()
+goal.p = home_start_location
+p.move_cp(goal).wait()
+time.sleep(.5)
+
+print("Moving Down: ------------")
+p.jaw.open()
+
+downLocation = PyKDL.Vector(points[0][0], points[0][1],zLayer - extensionHeight)
+goal = p.measured_cp()
+goal.p = downLocation
+p.move_cp(goal).wait()
+
+# Extend Hands 
+time.sleep(1)
+p.jaw.close()
+time.sleep(1)
+
 goal = p.measured_cp()
 goal.p = home_start_location
 p.move_cp(goal).wait()
 
+
+print("Starting: ------------")
+
 time.sleep(.5)
 q_0 = p.measured_jp()
 current_q = q_0
-
-# No height correction 
-
-print(q_0)
-print("-----------------")
-print("Moved To home")
 time.sleep(1)
 
-for i in range(len(points)): 
+for i in range(len(vel)): 
 	
-	v = np.append(vel[i], [0, 0, 0], axis=0) # this probably wrong 
+	v = np.append( [vel[i][1],vel[i][0],vel[i][2]], [0, 0, 0], axis=0) # this probably wrong 
 	
 	q_dot = np.dot(np.linalg.inv(jacobian_val), v)
 	#q_dot = np.linalg.inv(jacobian_val) * v 
 
-	current_q = current_q + q_dot * 2/40
+	current_q = current_q + q_dot * totalTime/freq
 	#print(current_q)
-	print(jacobian_val)
-	print("-----")
+	#print(jacobian_val)
+	#print("-----")
 	# reformat slightly 
 	p.move_jp(current_q).wait()
 	#time.sleep(.00001)
-	print("Moved: ", i)
+	# print("Moved: ", i)
+	#print(points[i])
+	#print(p.measured_cp().p)
+	current_q = p.measured_jp()
 
-print("------------------------")
+	current_point = p.measured_cp()
+	current_point = current_point.p
+
+	err  = math.sqrt((current_point[0]- points[i][0])**2 + (current_point[1]- points[i][1])**2)
+
+	print("------------------")
+	print("Target Point: ",  points[i])
+	print("Velocity vec: ", v)
+	print("Current Point: ", current_point)
+
+	print(round(err,3))
+	#time.sleep(totalTime/freq )
+
+
+v = np.append( [vel[-1][1],vel[-1][0],vel[-1][2]], [0, 0, 0], axis=0)
+q_dot = np.dot(np.linalg.inv(jacobian_val), v)
+current_q = current_q + q_dot * totalTime/freq
+p.move_jp(current_q).wait()
+time.sleep(.5)
+print("END ------------------------")
+
+print("Final Position: ")
+
 print(p.measured_cp())
+print("Target Point: ")
 print(points[-1])
+print("Adjusting Forced")
+print("------------------------")
+
+
+finalLocation = PyKDL.Vector(points[-1][0],points[-1][1],-.1135)
+goal = p.measured_cp()
+goal.p = finalLocation
+p.move_cp(goal).wait()
+time.sleep(.5)
+
+print(p.measured_cp())
+
+
+print("Moving Down: ------------")
+
+downLocation = PyKDL.Vector(points[-1][0], points[-1][1],zLayer - extensionHeight)
+goal = p.measured_cp()
+goal.p = downLocation
+p.move_cp(goal).wait()
+
+# Extend Hands 
+time.sleep(1)
+p.jaw.open()
+time.sleep(1)
+goal = p.measured_cp()
+goal.p = finalLocation
+p.move_cp(goal).wait()
+p.jaw.close()
+
+print("Finished: ------------")
+
+
 
 
 """

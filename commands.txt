@@ -3,7 +3,7 @@ roscore
 ------
 roslaunch dvrk_robot dvrk_arm_rviz.launch arm:=PSM1
 -----
-dvrk_python script_name.py
+rosrun dvrk_python script_name.py
 
 
 Coppellia ---
