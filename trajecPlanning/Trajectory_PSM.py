@@ -15,7 +15,6 @@ import rospy
 class TrajctoryNode(object):
 
     def __init__(self, homeLocation):
-        rospy.init_node('TrajctoryNode')  # Set a descriptive node name
         self.jacobian_val = None  
         self.subscriber = rospy.Subscriber( '/PSM1/body/jacobian', Float64MultiArray, self.jacobian_callback, queue_size=1)
         

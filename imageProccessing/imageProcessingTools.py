@@ -28,8 +28,6 @@ TODO
 #! /usr/bin/env python
 
 
-
-
 import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image
@@ -44,7 +42,7 @@ import dvrk #DVRK toolbox
 import sys
 from scipy.spatial.transform import Rotation as R
 import os
-import camera # DVRK camera code
+import imageProccessing.camera as camera # DVRK camera code
 import tictactoe
 
 #Constants for MoveECM function & status variable
