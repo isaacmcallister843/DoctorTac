@@ -127,10 +127,12 @@ def procImage(image):
 	#we get topdown image and corners array. if array is not 4, we currently move to the right.
 	#Need to fix this
 	topdownimage, corners = Player.find_board(image)
-	if corners.shape[0] == 4:
+
+	if corners.shape[0] == 4: #all corners visible
 		status=0
-	else:
+	else: 		#need to move ECM (todo)
 		status=3
+		return status
 
 	#For now, lets assume player is always 'x'
 	#if player is None: #player=readboardforplayer
@@ -142,10 +144,10 @@ def procImage(image):
 	cells = Player.get_board_template(topdownimage)
 	board = [None] * 9 
 	for i in range(9):
-			shape = Player.find_shape(cells[i])
-			xcoord= cells[i][0]
-			ycoord=cells[i][1]
-			board[i]=boardsquare(xcoord,ycoord,shape)
+		shape = Player.find_shape(cells[i])
+		xcoord= cells[i][0]
+		ycoord=cells[i][1]
+		board[i]=boardsquare(xcoord,ycoord,shape)
 
 	#coordinates of one of the pieces (off to the side) to pick up
 	#coord_pickup=readboardforpiece()

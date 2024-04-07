@@ -24,14 +24,33 @@ import imageProccessing.imageProcessingTools as imTools
 
 if __name__ == '__main__':
 	
+	# ----- ROS Setup ---------
+	rospy.init_node('mainNode')
+	r = rospy.Rate(100)
+
     # ----- Initalization ----- 
 	TrajctoryMain = trajecTools.TrajctoryNode(homeLocation = (.14,.1, 0))
+
 	left_cam = camera.camera('left')
 	right_cam = camera.camera('right')
-	
+	ecm = dvrk.arm('ECM')
 
 	TrajctoryMain.returnHome()
 
-	#initiate ecm object
-	ecm = dvrk.arm('ECM')
-	r = rospy.Rate(100)
+	# -------------------------
+
+	#get 2d coordinates from images
+	_, _, coords_2dR, coords_pickupR, _ = imTools.procImage(right_cam.get_image())
+	_, _, coords_2dL, coords_pickupL, _ = imTools.procImage(left_cam.get_image())
+
+	#get 3d points of starting point
+	coords_3d_pickup = imTools.findDepth(coords_pickupR[0], coords_pickupR[1],
+							coords_pickupL[0], yl = coords_pickupL[1])
+	
+	#get 2d coords of end point
+	ind_to_play=1
+	xr, yr = coords_2dR[ind_to_play]
+	xl, yl = coords_2dL[ind_to_play]
+
+	#get 3d points of end point
+	coords_3d_putdown = imTools.findDepth(xr,yr,xl,yl)
