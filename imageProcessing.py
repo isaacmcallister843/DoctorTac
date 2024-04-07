@@ -47,7 +47,7 @@ from scipy.spatial.transform import Rotation as R
 import os
 import camera #Bobsys DVRK camera code
 from rospy.numpy_msg import numpy_msg
-from rospy_tutorials.msg import Floats
+#from rospy_tutorials.msg import Floats
 import tictactoe
 
 #Constants for MoveECM function & status variable
@@ -62,11 +62,11 @@ lowerBoundary 	= -150
 #Player.py initializations arent added into this file
 
 class boardsquare:
-	def __init__(self,x_coord,y_coord,tile) -> None:
+	def __init__(self,x_coord,y_coord,tile):
 		self.x_coord=x_coord
 		self.y_coord=y_coord
 		self.tile=tile
-	def isFull(self)->bool:
+	def isFull(self):
 		return not (self.tile is None)
 
 class imageProcessingMain():
@@ -80,14 +80,14 @@ class imageProcessingMain():
 		#initiate ecm object
 		self.ecm = dvrk.arm('ECM')
 		#todo- float64 or float32?
-		self.pub = rospy.Publisher('coordinates_3d', numpy_msg(Floats), queue_size=10)
-		self.r = r
+		#self.pub = rospy.Publisher('coordinates_3d', numpy_msg(Floats), queue_size=10)
+		self.r = rospy.Rate(10)
 
 		#Subscribe to arm node so we know when its ready for next movement
 		#rospy.Subscriber('ready_state', todo message type, self.image_callback, queue_size = 1, buff_size = 1000000)
 
 		#Should we initiate self.status? self.board?
-
+		print("image proc initizalized")
 	def image_callback(self, data):
 		#image processing function takes OpenCV image
 		status, board, coords_2dR, coords_pickupR, player = procImage(self.right_cam.get_image())
@@ -120,7 +120,7 @@ class imageProcessingMain():
 
 		#combine into 1x6 array [pickup_coords, putdown_coords]
 		coords_3d = np.concatenate((coords_3d_pickup, coords_3d_putdown), axis=None)
-		self.pub.publish(coords_3d)
+		#self.pub.publish(coords_3d)
 
 #Function is used to turn 2d coordinates into 3d coordinates
 def findDepth(ur,vr,ul,vl):
@@ -247,8 +247,8 @@ def end_game (winner):
 		("Unknown Value inputed")
 
 if __name__ == "__main__":
-
-	r = rospy.Rate(10)
+		
+	r = 100
 
 	ob = imageProcessingMain(r)
 	data=0

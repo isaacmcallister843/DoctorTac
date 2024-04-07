@@ -7,22 +7,22 @@ import cv2
 import argparse
 import numpy as np
 
-from keras.models import load_model
+#from keras.models import load_model
 
 import imutils
 import detections
 from alphabeta import Tic, get_enemy, determine
 
 
-def parse_arguments(argv):
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('cam', type=int,
-                        help='USB camera for video streaming')
-    parser.add_argument('--model', '-m', type=str, default='data/model.h5',
-                        help='model file (.h5) to detect Xs and Os')
-
-    return parser.parse_args()
+#def parse_arguments(argv):
+#    parser = argparse.ArgumentParser()
+#
+#    parser.add_argument('cam', type=int,
+#                       help='USB camera for video streaming')
+#    parser.add_argument('--model', '-m', type=str, default='data/model.h5',
+#                        help='model file (.h5) to detect Xs and Os')#
+#
+#    return parser.parse_args()
 
 
 def find_board(frame, add_margin=True):
@@ -74,11 +74,11 @@ def find_circles(frame, dp=1.2, min_dist=100, param1=100, param2=30, min_radius=
 
 
 def find_shape(cell):
-    """Is shape and X or an O?"""
-    mapper = {0: None, 1: 'X', 2: 'O'}
-    cell = detections.preprocess_input(cell)
-    idx = np.argmax(model.predict(cell))
-    return mapper[idx]
+    #"""Is shape and X or an O?"""
+    #mapper = {0: None, 1: 'X', 2: 'O'}
+    #cell = detections.preprocess_input(cell)
+    #idx = np.argmax(model.predict(cell))
+    return 'O'
 
 
 def get_board_template(frame):
@@ -234,9 +234,9 @@ def play(vcap):
 def main(args):
     """Check if everything's okay and start game"""
     # Load model
-    global model
-    assert os.path.exists(args.model), '{} does not exist'
-    model = load_model(args.model)
+    #global model
+    #assert os.path.exists(args.model), '{} does not exist'
+    #model = load_model(args.model)
 
     # Initialize webcam feed - Vcap is frame is videocapture
     vcap = cv2.VideoCapture(args.cam)

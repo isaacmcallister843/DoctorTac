@@ -41,7 +41,7 @@ class camera:
 		full_ros_namespace = self.__ros_namespace + self.__camera_name + '/image_raw'
 
 		#subscribe to ros node that publishes images from the ECM
-		rospy.Subscriber(full_ros_namespace, Image, self.image_callback, queue_size = 1, buff_size = 1000000)
+		rospy.Subscriber(full_ros_namespace, CompressedImage, self.image_callback, queue_size = 1, buff_size = 1000000)
 
 	def image_callback(self, data):
 
@@ -55,7 +55,7 @@ class camera:
 
 
 	def get_image(self):
-		print('image receieved')
+		print(self.cv_image)
 		return self.cv_image
 		
 	#saves the image in a folder. /home/fizzer/catkin_ws/src/dvrk-ros/dvrk_python/Images
@@ -65,7 +65,7 @@ class camera:
 			#Should have been able to do this using image_path, but can't figure it out
 			#Right now saves to main ROS folder
 			#cv2.imwrite(self.image_path + self.__camera_name+"/"+self.__camera_name+"_Camera" +"_" + str(self.image_count)+".png", self.cv_image)
-			cv2.imwrite('/home/fizzer/catkin_ws/src/dvrk-ros/dvrk_python/Images'+str(self.image_count)+'.png',self.cv_image)
+			cv2.imwrite('/home/fizzer/catkin_ws/src/dvrk-ros/dvrk_python/Images/'+str(self.image_count)+'.png',self.cv_image)
 			self.image_count = self.image_count + 1
 			print('image saved')
 			return True
