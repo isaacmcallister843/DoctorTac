@@ -1,0 +1,16 @@
+
+roscore
+------
+roslaunch dvrk_robot dvrk_arm_rviz.launch arm:=PSM1
+-----
+rosrun dvrk_python script_name.py
+
+
+Coppellia ---
+
+cd CoppeliaSim_Edu_V4_0_0_Ubuntu18_042
+./coppeliaSim.sh
+
+roscd roscd dvrk_config/console/console_config_patient_side/2
+
+rosrun dvrk_robot dvrk_console_json -j console-ECM-PSM1-PSM2_KIN_SIMULATED.json
