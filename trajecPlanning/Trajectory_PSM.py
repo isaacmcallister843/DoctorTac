@@ -186,7 +186,7 @@ class TrajctoryNode(object):
                 Go to pick Location 
         """
         print("Going to pickup location ")
-        time.sleep(5)
+        time.sleep(2)
         self.straightlineMovement(pickLocation)
         print("At pickup location")
         time.sleep(2)
