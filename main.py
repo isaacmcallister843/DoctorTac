@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import sys
 import os
 import dvrk
@@ -24,14 +25,58 @@ import imageProccessing.imageProcessingTools as imTools
 
 if __name__ == '__main__':
 	
-    # ----- Initalization ----- 
-	TrajctoryMain = trajecTools.TrajctoryNode(homeLocation = (.14,.1, 0))
+	# ----- ROS Setup ---------
+	rospy.init_node('mainNode')
+	r = rospy.Rate(100)
+
+	'''
+	p = dvrk.psm('PSM1') 
+	p.enable()
+	p.home()
+	downLocation = PyKDL.Vector(0,0, 0)
+	goal = p.measured_cp()
+	goal.p = downLocation
+	p.move_cp(goal).wait()
+	currentLocation = p.measured_cp().p
+	'''
+	'''
+	TrajctoryMain = trajecTools.TrajctoryNode(homeLocation = (-.1,.05, 0))
+	TrajctoryMain.defualtZLayer = -.17
+	print("Going home")
+	TrajctoryMain.returnHome()
+	print("Homed")
+	time.sleep(5)
+
+	TrajctoryMain.pickAndPlace(pickLocation = (-.13,.1), placeLocation = (-.1,-.05))
+	'''
+	
 	left_cam = camera.camera('left')
 	right_cam = camera.camera('right')
-	
-
-	TrajctoryMain.returnHome()
-
-	#initiate ecm object
 	ecm = dvrk.arm('ECM')
-	r = rospy.Rate(100)
+
+	#TrajctoryMain.returnHome()
+
+	# -------------------------
+	while isinstance(right_cam.get_image(), list):
+			r.sleep()
+			#print('sleeping')
+	print('cv file recieved')
+	
+	#get 2d coordinates from images
+	_, _, coords_2dR, coords_pickupR, _ = imTools.procImage(right_cam.get_image())
+	_, _, coords_2dL, coords_pickupL, _ = imTools.procImage(left_cam.get_image())
+	print(coords_2dR)
+	print(coords_pickupR)
+
+	#get 3d points of starting point
+	coords_3d_pickup = imTools.findDepth(coords_pickupR[0], coords_pickupR[1],
+							coords_pickupL[0], yl = coords_pickupL[1])
+	
+	#get 2d coords of end point
+	ind_to_play=1
+	xr, yr = coords_2dR[ind_to_play]
+	xl, yl = coords_2dL[ind_to_play]
+
+	#get 3d points of end point
+	coords_3d_putdown = imTools.findDepth(xr,yr,xl,yl)
+	
