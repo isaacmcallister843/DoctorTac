@@ -22,8 +22,8 @@ import time
 
 class camera:
 
-	#def __init__(self, camera_name, ros_namespace = '/dVRK/'):
-	def __init__(self, camera_name, ros_namespace = '/stereo/'):
+	def __init__(self, camera_name, ros_namespace = '/ubc_dVRK_ECM/'):
+	#def __init__(self, camera_name, ros_namespace = '/stereo/'):
 		#camera name is left or right camera of DVRK
 		self.__camera_name = camera_name
 		#if simulator, we use stereo. if real DVRK, we use /dvrk/
@@ -33,28 +33,29 @@ class camera:
 		self.image_count = 1
 		#Path where images will be saved. Should be changed
 		self.image_path = os.path.abspath(os.getcwd()) + '/Images/'
-
-
-
-		#full_ros_namespace = self.__ros_namespace + self.__camera_name + '/decklink/camera'
+  
+  		#subscribe to ros node that publishes images from the ECM (for sim robot)
 		#full namespace is stereoORdVRK/leftORRight/decklinkORImageRaw
-		full_ros_namespace = self.__ros_namespace + self.__camera_name + '/image_raw'
+		#full_ros_namespace = self.__ros_namespace + self.__camera_name + '/image_raw'
+		#rospy.Subscriber(full_ros_namespace, Image, self.image_callback, queue_size = 1, buff_size = 1000000)
 
-		#subscribe to ros node that publishes images from the ECM
+		#subscribe to ros node that publishes images from the ECM (for real robot)
+		full_ros_namespace = self.__ros_namespace + self.__camera_name + '/decklink/camera/image_raw/'
 		rospy.Subscriber(full_ros_namespace, Image, self.image_callback, queue_size = 1, buff_size = 1000000)
 
 	def image_callback(self, data):
 
 		try:
 			self.cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-			print('image called')
+		#	print('image called')
 		except CvBridgeError as e:
 			print(e)
 			print('failed callback')
-		self.save_image()
+		#self.save_image()
 
 
 	def get_image(self):
+		#print(self.cv_image)
 		return self.cv_image
 		
 	#saves the image in a folder. /home/fizzer/catkin_ws/src/dvrk-ros/dvrk_python/Images
@@ -64,7 +65,7 @@ class camera:
 			#Should have been able to do this using image_path, but can't figure it out
 			#Right now saves to main ROS folder
 			#cv2.imwrite(self.image_path + self.__camera_name+"/"+self.__camera_name+"_Camera" +"_" + str(self.image_count)+".png", self.cv_image)
-			cv2.imwrite('/home/fizzer/catkin_ws/src/dvrk-ros/dvrk_python/Images/'+str(self.image_count)+'.png',self.cv_image)
+			cv2.imwrite('/home/dvrk-pc/Desktop/Images/'+str(self.image_count)+str(self.__camera_name)+'.png',self.cv_image)
 			self.image_count = self.image_count + 1
 			print('image saved')
 			return True

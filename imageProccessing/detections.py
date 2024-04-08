@@ -1,3 +1,6 @@
+
+
+
 """Useful functions for image processing and detection using OpenCV"""
 
 
@@ -22,15 +25,20 @@ def find_corners(img):
 
 def contoured_bbox(img):
     """Returns bbox of contoured image"""
-    image, contours, hierarchy = cv2.findContours(img, 1, 2)
+    #image, contours, hierarchy = cv2.findContours(img, 1, 2)
+    contours, hierarchy = cv2.findContours(img, 1, 2)
     # Largest object is whole image,
     # second largest object is the ROI
-    if len(contours)>1:
-    	sorted_cntr = sorted(contours, key=lambda cntr: cv2.contourArea(cntr))
-    	return cv2.boundingRect(sorted_cntr[-2])
-    else:
-    	print("not enough countours found")
-    	return None, None, None, None
+    #cv2.imshow('image_window',img)
+    #cv2.waitKey(0)
+    #if len(contours)>1:
+    sorted_cntr = sorted(contours, key=lambda cntr: cv2.contourArea(cntr))
+    #print("contours?")
+    #print(sorted_cntr)
+    return cv2.boundingRect(sorted_cntr[0])
+    #else:
+        #print("not enough countours found")
+        #return None, None, None, None
 
 
 def preprocess_input(img):

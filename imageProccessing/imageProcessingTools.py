@@ -37,14 +37,14 @@ from geometry_msgs.msg import TransformStamped
 import std_msgs
 import cv2 #Vision toolbox
 import numpy as np #Matrix toolbox
-import Player #Bens vision code
+import imageProccessing.Player as Player #Bens vision code
 import dvrk #DVRK toolbox
 import sys
 from scipy.spatial.transform import Rotation as R
 import os
-import imageProccessing.camera as camera # DVRK camera code Comment bottom and uncomment this
-#import camera
-import tictactoe
+#import imageProccessing.camera as camera # DVRK camera code Comment bottom and uncomment this
+import imageProccessing.camera as camera
+import imageProccessing.tictactoe as tictactoe
 
 
 #Constants for MoveECM function & status variable
@@ -102,7 +102,7 @@ def findDepth(ur,vr,ul,vl):
 	oy = int_matrix_right[1][2]
 
 	t_matrix = np.linalg.inv(int_matrix_right)*calib_matrixR[:,3]
-
+amera.
 	#if right camera is the main camera
 	#then difference btw them is tx of left camera
 	b = t_matrix[0]
@@ -133,7 +133,7 @@ def procImage(image):
 	if corners.shape[0] == 4: #all corners visible
 		status=0
 	else: 		#need to move ECM (todo)
-		status=3
+		status=0 #changed from 3 to 0 to run
 		return status
 
 	#For now, lets assume player is always 'x'
@@ -152,9 +152,10 @@ def procImage(image):
 		board[i]=boardsquare(xcoord,ycoord,shape)
 
 	#coordinates of one of the pieces (off to the side) to pick up
-	#coord_pickup=readboardforpiece()
-	coords_pickup = Player.find_circles(topdownimage)
-
+	#coord_pickup=commented out becuase no circle
+ 
+	#coords_pickup = Player.find_circles(topdownimage)
+	coords_pickup=[0,0]
 	#Chatgpt function to turn 1d array into 2d numpy array for later usage.
 	coords_2d= np.array([[(board[row * 3 + col].x_coord, board[row * 3 + col].y_coord) for col in range(3)] for row in range(3)]),
 	
@@ -211,9 +212,9 @@ if __name__ == "__main__":
 
 		while isinstance(right_cam.get_image(), list):
 			r.sleep()
-			print('sleeping')
-		#print('complete')
-		
+			#print('sleeping')
+		print('complete')
+		'''	
 		#image processing function takes OpenCV image
 		status, board, coords_2dR, coords_pickupR, player = procImage(right_cam.get_image())
 
@@ -246,5 +247,5 @@ if __name__ == "__main__":
 		#combine into 1x6 array [pickup_coords, putdown_coords]
 		coords_3d = np.concatenate((coords_3d_pickup, coords_3d_putdown), axis=None)
 		#self.pub.publish(coords_3d)
-		
+		'''
 		r.sleep()

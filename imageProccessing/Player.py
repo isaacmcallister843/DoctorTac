@@ -9,9 +9,9 @@ import numpy as np
 
 #from keras.models import load_model
 
-import imutils
-import detections
-from alphabeta import Tic, get_enemy, determine
+import imageProccessing.imutils as imutils
+import imageProccessing.detections as detections
+from imageProccessing.alphabeta import Tic, get_enemy, determine
 
 
 #def parse_arguments(argv):
