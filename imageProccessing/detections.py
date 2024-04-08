@@ -22,11 +22,15 @@ def find_corners(img):
 
 def contoured_bbox(img):
     """Returns bbox of contoured image"""
-    contours, hierarchy = cv2.findContours(img, 1, 2)
+    image, contours, hierarchy = cv2.findContours(img, 1, 2)
     # Largest object is whole image,
     # second largest object is the ROI
-    sorted_cntr = sorted(contours, key=lambda cntr: cv2.contourArea(cntr))
-    return cv2.boundingRect(sorted_cntr[-2])
+    if len(contours)>1:
+    	sorted_cntr = sorted(contours, key=lambda cntr: cv2.contourArea(cntr))
+    	return cv2.boundingRect(sorted_cntr[-2])
+    else:
+    	print("not enough countours found")
+    	return None, None, None, None
 
 
 def preprocess_input(img):
