@@ -42,8 +42,10 @@ import dvrk #DVRK toolbox
 import sys
 from scipy.spatial.transform import Rotation as R
 import os
-import imageProccessing.camera as camera # DVRK camera code
+import imageProccessing.camera as camera # DVRK camera code Comment bottom and uncomment this
+#import camera
 import tictactoe
+
 
 #Constants for MoveECM function & status variable
 leftBoundary	= 150
@@ -206,6 +208,11 @@ if __name__ == "__main__":
 	print("started node")
 
 	while not rospy.is_shutdown():
+
+		while isinstance(right_cam.get_image(), list):
+			r.sleep()
+			print('sleeping')
+		#print('complete')
 		
 		#image processing function takes OpenCV image
 		status, board, coords_2dR, coords_pickupR, player = procImage(right_cam.get_image())
@@ -239,9 +246,5 @@ if __name__ == "__main__":
 		#combine into 1x6 array [pickup_coords, putdown_coords]
 		coords_3d = np.concatenate((coords_3d_pickup, coords_3d_putdown), axis=None)
 		#self.pub.publish(coords_3d)
-
+		
 		r.sleep()
-
-
-
-
