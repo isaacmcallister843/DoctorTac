@@ -8,4 +8,4 @@ target_z_height = 1
 
 plan1 = Trajectory_Toolbox.forwardTrajectory(target_point_1, target_point_2, target_z_height, 4, 100) 
 print(plan1.returnJustPoints())
-plan1.createPlot()
+plan1.createPlot3D()
