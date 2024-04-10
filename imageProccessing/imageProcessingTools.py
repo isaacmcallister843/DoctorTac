@@ -151,14 +151,15 @@ def procImage(image):
 		xcoord= cells[i][0]
 		ycoord=cells[i][1]
 		board[i]=boardsquare(xcoord,ycoord,shape)
-		#cv2.circle(image, (xcoord,ycoord), 10, (0, 255, 0), 2)
-	#cv2.imshow("image",image)
+		cv2.circle(topdownimage, (xcoord,ycoord), 10, (0, 255, 0), 2)
+	#cv2.imshow("image",topdownimage)
 	#cv2.waitKey(0)
+	#cv2.destroyAllWindows()
 	
 	#coordinates of one of the pieces (off to the side) to pick up
 	#coord_pickup=commented out becuase no circle
  
-	coords_pickup = Player.find_circles(topdownimage)
+	coords_pickup = Player.find_triangles(topdownimage)
 	#coords_pickup=[0,0]
 	#Chatgpt function to turn 1d array into 2d numpy array for later usage.
 	coords_2d= np.array([[(board[row * 3 + col].x_coord, board[row * 3 + col].y_coord) for col in range(3)] for row in range(3)])
