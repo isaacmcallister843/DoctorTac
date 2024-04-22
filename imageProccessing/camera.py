@@ -39,19 +39,19 @@ class camera:
 		#full_ros_namespace = self.__ros_namespace + self.__camera_name + '/image_raw'
 		#rospy.Subscriber(full_ros_namespace, Image, self.image_callback, queue_size = 1, buff_size = 1000000)
 
-		#subscribe to ros node that publishes images from the ECM (for real robot)
-		full_ros_namespace = self.__ros_namespace + self.__camera_name + '/decklink/camera/image_raw/'
-		rospy.Subscriber(full_ros_namespace, Image, self.image_callback, queue_size = 1, buff_size = 1000000)
+		#subscribe to ros node that publishes images from the ECM (for real robot) - changed to compressed image
+		full_ros_namespace = self.__ros_namespace + self.__camera_name + '/decklink/camera/image_raw/compressed'
+		rospy.Subscriber(full_ros_namespace, CompressedImage, self.image_callback, queue_size = 1, buff_size = 1000000)
 
 	def image_callback(self, data):
 
 		try:
-			self.cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+			self.cv_image = self.bridge.compressed_imgmsg_to_cv2(data, "bgr8")
 		#	print('image called')
 		except CvBridgeError as e:
 			print(e)
 			print('failed callback')
-		#self.save_image()
+		self.save_image()
 
 
 	def get_image(self):
@@ -67,7 +67,7 @@ class camera:
 			#cv2.imwrite(self.image_path + self.__camera_name+"/"+self.__camera_name+"_Camera" +"_" + str(self.image_count)+".png", self.cv_image)
 			cv2.imwrite('/home/dvrk-pc/Desktop/Images/'+str(self.image_count)+str(self.__camera_name)+'.png',self.cv_image)
 			self.image_count = self.image_count + 1
-			print('image saved')
+			#print('image saved')
 			return True
 		else:	
 			print('image not saved')
