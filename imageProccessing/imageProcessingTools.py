@@ -121,6 +121,41 @@ amera.
 
 	return(coords_3d)
 
+def findBoardCoords(image):
+	cells = Player.get_board_template(image)
+	board = [None] * 9 
+	for i in range(9):
+		xcoord=cells[i][0]
+		ycoord=cells[i][1]
+		shape=None
+		board[i]=boardsquare(xcoord,ycoord,shape)
+	return board
+
+def compare(board, image, tolerance=20):
+    current_circles = Player.findcurrentboardcoords(image)  # Get current state from the image
+    current_positions = [(c[0], c[1]) for c in current_circles]  # List of current (x, y) positions
+
+    # Initialize a match found flag for each board square
+    matched = [False] * len(board)
+
+    # Loop through each board square and determine the closest current circle
+    for i, square in enumerate(board):
+        closest_dist = float('inf')
+        for (cx, cy) in current_positions:
+            dist = np.sqrt((square.x_coord - cx) ** 2 + (square.y_coord - cy) ** 2)
+            if dist < closest_dist:
+                closest_dist = dist
+
+        # If the closest circle is within the tolerance and the square is not yet covered, it's considered unchanged
+        if closest_dist <= tolerance:
+            matched[i] = True
+
+    # Update board squares where no close circle was found
+    for i, square in enumerate(board):
+        if not matched[i] and square.tile is None:
+            square.tile = 'X'  # Mark the square as covered with an 'X' or 'O'
+
+    return board
 
 def procImage(image, status):
 	
@@ -228,12 +263,6 @@ if __name__ == "__main__":
 
 		#combine into 1x6 array [pickup_coords, putdown_coords]
 		coords_3d = np.concatenate((coords_3d_pickup, coords_3d_putdown), axis=None)
-<<<<<<< HEAD
-		#self.pub.publish(coords_3d)
-		'''
-		r.sleep()
-=======
 		
 		r.sleep()
 '''
->>>>>>> f048599d2786019484ab5d3b44ec255537fc3298
