@@ -11,7 +11,7 @@ Based on image processing, code either waits for player to move, moves ECM so bo
 Image processing determines tictactoe matrix of play, coordinates of board, coordinates of 1 of remaining pieces
 3D Coordinates for piece-to-pick-up and spot-to-put-down are published to "coordinates_3d" topic
 
-TODO
+#TODO
 	- all the image processing stuff (Ben)
 	- camera calibration matrix
 	- verification (all!)
@@ -23,11 +23,7 @@ TODO
 
 '''
 
-
-#Random Empty File. 
-#! /usr/bin/env python
-
-
+#Neccessary libraries
 import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image
@@ -68,6 +64,10 @@ class boardsquare:
 def findDepth(ur,vr,ul,vl):
 
 	#Calibration from lab (do not edit):
+	#ur = 144, vr =0, ul=89. vl=200
+	#Assume its in pixel coords
+	#is camera calibrations matrices in different coords?
+	
 	calib_matrixR = np.array([[1996.53569, 0, 936.08872, -11.36134],
 				 [0, 1996.53569, 459.10171, 0],
 				 [0, 0, 1, 0,]])
@@ -121,68 +121,60 @@ amera.
 
 	return(coords_3d)
 
+def findBoardCoords(image):
+	cells = Player.get_board_template(image)
+	board = [None] * 9 
+	for i in range(9):
+		xcoord=cells[i][0]
+		ycoord=cells[i][1]
+		shape=None
+		board[i]=boardsquare(xcoord,ycoord,shape)
+	return board
+
+def compare(board, image, tolerance=20):
+    current_circles = Player.findcurrentboardcoords(image)  # Get current state from the image
+    current_positions = [(c[0], c[1]) for c in current_circles]  # List of current (x, y) positions
+
+    # Initialize a match found flag for each board square
+    matched = [False] * len(board)
+
+    # Loop through each board square and determine the closest current circle
+    for i, square in enumerate(board):
+        closest_dist = float('inf')
+        for (cx, cy) in current_positions:
+            dist = np.sqrt((square.x_coord - cx) ** 2 + (square.y_coord - cy) ** 2)
+            if dist < closest_dist:
+                closest_dist = dist
+
+        # If the closest circle is within the tolerance and the square is not yet covered, it's considered unchanged
+        if closest_dist <= tolerance:
+            matched[i] = True
+
+    # Update board squares where no close circle was found
+    for i, square in enumerate(board):
+        if not matched[i] and square.tile is None:
+            square.tile = 'X'  # Mark the square as covered with an 'X' or 'O'
+
+    return board
+
 
 def procImage(image):
-	#if image is not fully in frame, send 'status' to tell ECM to move
-	# 1= move y+, 2= move y-, 3=move x+, 4=move x-, 0=don't move
-	#if status=9, it isn't the robots turn yet (player still moving, player hasn't played)
-	#we get topdown image and corners array. if array is not 4, we currently move to the right.
-	#Need to fix this
-	topdownimage, corners = Player.find_board(image)
-
-	if corners.shape[0] == 4: #all corners visible
-		status=0
-	else: 		#need to move ECM (todo)
-		status=0 #changed from 3 to 0 to run
-		return status
+	board, coords_2d = findBoardCoords(image)
 
 	#For now, lets assume player is always 'x'
 	#if player is None: #player=readboardforplayer
 	player = 'X' 
 	
-	#array corresponding to played squares
-	#Board will be initialized using read board to get the x and y coordinates of board and place it in board array.
-	#cells goes top left, middle left, right left, and holds another list (x,y,width,height)
-	cells = Player.get_board_template(topdownimage)
-	board = [None] * 9 
-	for i in range(9):
-		#shape = Player.find_shape(cells[i])
-		shape=None
-		xcoord= cells[i][0]
-		ycoord=cells[i][1]
-		board[i]=boardsquare(xcoord,ycoord,shape)
-		cv2.circle(topdownimage, (xcoord,ycoord), 10, (0, 255, 0), 2)
-	#cv2.imshow("image",topdownimage)
-	#cv2.waitKey(0)
-	#cv2.destroyAllWindows()
-	
+
 	#coordinates of one of the pieces (off to the side) to pick up
 	#coord_pickup=commented out becuase no circle
  
-	coords_pickup = Player.find_triangles(topdownimage)
-	#coords_pickup=[0,0]
+	#coords_pickup = Player.find_circles(topdownimage)
+	coords_pickup=[0,0]
 	#Chatgpt function to turn 1d array into 2d numpy array for later usage.
 	coords_2d= np.array([[(board[row * 3 + col].x_coord, board[row * 3 + col].y_coord) for col in range(3)] for row in range(3)])
-	
-	return status, board, coords_2d, coords_pickup, player
+	return board, coords_2d, coords_pickup, player
 
-def moveECM(status,ecm,r):
-
-	#start position
-	goal = ecm.setpoint_cp()
-
-	if status is 9:
-		r.sleep() #player hasn't finished playing, just sleep
-	elif status is 1:
-		goal.p[1] += 0.05 #move 5cm +y
-	elif status is 2:
-		goal.p[1] -= 0.05 #move 5cm -y
-	elif status is 3:
-		goal.p[0] += 0.05 #move 5cm +x
-	elif status is 2:
-		goal.p[0] -= 0.05 #move 5cm -x
-
-	ecm.move_cp(goal).wait()
 
 def end_game (winner):
 	i=0

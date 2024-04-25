@@ -1,5 +1,9 @@
-"""Useful functions for matrix transformations"""
+#!/usr/bin/env python
 
+# Author: Ben Heinrichs, Bobsy Narayan
+# Date: 2024-03-08
+# Edited: 2024-04-25
+# Useful functions for matrix transformations - NEEDS TO BE LOOKED OVER
 
 import cv2
 import numpy as np

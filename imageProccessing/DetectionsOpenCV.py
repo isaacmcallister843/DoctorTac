@@ -23,7 +23,9 @@ def find_circles(frame, dp=1.2, min_dist=100, param1=100, param2=30, min_radius=
         return []
 
     # Convert the circle parameters (x, y, radius) to integers
-    circles = np.round(circles).astype("int")
+    circles = np.round(circles[0, :, :2]).astype("int")  # Extract only the x, y coordinates
+    
+    return circles
     
     #Testing code to see what values are found:
     #print("circle numbers", circles) #Print circle Coordinates to Terminal
