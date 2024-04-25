@@ -53,7 +53,7 @@ class TrajctoryNode(object):
         currentq[4] = 0 
         currentq[5] = math.radians(20)
         self.p.move_jp(currentq).wait()
-		#print(currentPos)
+	#print(currentPos)
         #newPath = Trajectory_Toolbox.forwardTrajectory((currentPos[0],currentPos[1], 0), self.homeLocation, 
         #        target_z_height = .02, total_time = self.defualtTotalTime, freqeuncy = self.defualtFreq)
         #self.exicutePath(currentPath=newPath)

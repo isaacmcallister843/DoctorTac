@@ -66,8 +66,8 @@ if __name__ == '__main__':
 	
 
 	#get 2d coordinates from images
-	_, _, coords_2dR, coords_pickupR, _ = imTools.procImage(right_cam.get_image())
-	_, _, coords_2dL, coords_pickupL, _ = imTools.procImage(left_cam.get_image())
+	_, coords_2dR, coords_pickupR, _ = imTools.procImage(right_cam.get_image())
+	_, coords_2dL, coords_pickupL, _ = imTools.procImage(left_cam.get_image())
 	print("right camera coords",coords_2dR)
 	if not coords_pickupL:
 		coords_pickupL=[0,0]
