@@ -122,12 +122,16 @@ amera.
 	return(coords_3d)
 
 
-def procImage(image):
-	#if image is not fully in frame, send 'status' to tell ECM to move
-	# 1= move y+, 2= move y-, 3=move x+, 4=move x-, 0=don't move
-	#if status=9, it isn't the robots turn yet (player still moving, player hasn't played)
-	#we get topdown image and corners array. if array is not 4, we currently move to the right.
-	#Need to fix this
+def procImage(image, status):
+	
+	#status indicates whether or not it's the robots turn
+	#if our algorithm is not 100% successful we can use status to check if a condition is met X times
+	#ex: if status==0, check board, 8 dots found, status++, reiterate. if 7 dots found, status=1 (restart)
+ 	#    but if status=X (maybe 5?) then the condition has been true for 5 iterations. set status=0 and return (robots turn!)
+
+
+	#-------needs updating:-------------------------------------------------------------
+
 	topdownimage, corners = Player.find_board(image)
 
 	if corners.shape[0] == 4: #all corners visible
@@ -166,23 +170,6 @@ def procImage(image):
 	
 	return status, board, coords_2d, coords_pickup, player
 
-def moveECM(status,ecm,r):
-
-	#start position
-	goal = ecm.setpoint_cp()
-
-	if status is 9:
-		r.sleep() #player hasn't finished playing, just sleep
-	elif status is 1:
-		goal.p[1] += 0.05 #move 5cm +y
-	elif status is 2:
-		goal.p[1] -= 0.05 #move 5cm -y
-	elif status is 3:
-		goal.p[0] += 0.05 #move 5cm +x
-	elif status is 2:
-		goal.p[0] -= 0.05 #move 5cm -x
-
-	ecm.move_cp(goal).wait()
 
 def end_game (winner):
 	i=0
@@ -197,11 +184,13 @@ def end_game (winner):
 		("Unknown Value inputed")
 
 
-if __name__ == "__main__":
 
+#NOT USED - see main.py.
+#testing only
+if __name__ == "__main__":
 	#create node
 	rospy.init_node('imageProc')
-
+'''
 	#initiate camera objects - these are subscribed to raw_images from dvrk cameras
 	left_cam = camera.camera('left')
 	right_cam = camera.camera('right')
@@ -209,28 +198,31 @@ if __name__ == "__main__":
 	#initiate ecm object
 	ecm = dvrk.arm('ECM')
 
-	r = rospy.Rate(100)
+	r = rospy.Rate(1000) # per second
 
 	print("started node")
 
 	while not rospy.is_shutdown():
 
+		#the first few calls happen before an image is sent by dvrk
+		#so the image variable (from *_cam.get_image) will be empty lists
+		#sleep until an image is sent and the image variable is no longer a list (should be CV image)
 		while isinstance(right_cam.get_image(), list):
 			r.sleep()
 			#print('sleeping')
-		print('complete')
-		'''	
+		#else:
+			#print('image received')
+			
 		#image processing function takes OpenCV image
 		status, board, coords_2dR, coords_pickupR, player = procImage(right_cam.get_image())
 
-		#if image is not in frame, move ECM
+		#Wait until player has moved (ex: 9 circles -> 8 circles)
 		while(status is not 0):
-			moveECM(status,ecm, r)
 			#look again
-			status, board, coords_2dR, coords_pickupR, player = procImage(right_cam.get_image())
-
-		#status is 0, get left image now
-		_, _, coords_2dL, coords_pickupL, _ = procImage(left_cam.get_image())
+			status, board, coords_2dR, coords_pickupR, player = procImage(right_cam.get_image(), status)
+		
+		#status is 0 (robot's turn), get left image now
+		_, _, coords_2dL, coords_pickupL, _ = procImage(left_cam.get_image(), status)
 
 		#play tictactoe
 		ind_to_play, winner = tictactoe.play(board, player)
@@ -239,6 +231,8 @@ if __name__ == "__main__":
 		if(winner is not 0):
 			end_game()
 
+
+		#2D to 3D------------------------------------------------------------------------------
 		#identify piece to play (x,y) in both cameras
 		coords_3d_pickup = findDepth(coords_pickupR[0], coords_pickupR[1],
 								coords_pickupL[0], yl = coords_pickupL[1])
@@ -248,9 +242,8 @@ if __name__ == "__main__":
 		xl, yl = coords_2dL[ind_to_play]
 		coords_3d_putdown = findDepth(xr,yr,xl,yl)
 
-
 		#combine into 1x6 array [pickup_coords, putdown_coords]
 		coords_3d = np.concatenate((coords_3d_pickup, coords_3d_putdown), axis=None)
-		#self.pub.publish(coords_3d)
-		'''
+		
 		r.sleep()
+'''
