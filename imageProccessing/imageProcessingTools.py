@@ -121,45 +121,24 @@ amera.
 
 	return(coords_3d)
 
-def findBoardCoords(image):
-	cells = Player.get_board_template(image)
-	board = [None] * 9 
-	for i in range(9):
-		xcoord=cells[i][0]
-		ycoord=cells[i][1]
-		shape=None
-		board[i]=boardsquare(xcoord,ycoord,shape)
-	return board
 
-def compare(board, image, tolerance=20):
-    current_circles = Player.findcurrentboardcoords(image)  # Get current state from the image
-    current_positions = [(c[0], c[1]) for c in current_circles]  # List of current (x, y) positions
-
-    # Initialize a match found flag for each board square
-    matched = [False] * len(board)
-
-    # Loop through each board square and determine the closest current circle
-    for i, square in enumerate(board):
-        closest_dist = float('inf')
-        for (cx, cy) in current_positions:
-            dist = np.sqrt((square.x_coord - cx) ** 2 + (square.y_coord - cy) ** 2)
-            if dist < closest_dist:
-                closest_dist = dist
-
-        # If the closest circle is within the tolerance and the square is not yet covered, it's considered unchanged
-        if closest_dist <= tolerance:
-            matched[i] = True
-
-    # Update board squares where no close circle was found
-    for i, square in enumerate(board):
-        if not matched[i] and square.tile is None:
-            square.tile = 'X'  # Mark the square as covered with an 'X' or 'O'
-
-    return board
+def procImage(image, status):
+	
+	#status indicates whether or not it's the robots turn
+	#if our algorithm is not 100% successful we can use status to check if a condition is met X times
+	#ex: if status==0, check board, 8 dots found, status++, reiterate. if 7 dots found, status=1 (restart)
+ 	#    but if status=X (maybe 5?) then the condition has been true for 5 iterations. set status=0 and return (robots turn!)
 
 
-def procImage(image):
-	board, coords_2d = findBoardCoords(image)
+	#-------needs updating:-------------------------------------------------------------
+
+	topdownimage, corners = Player.find_board(image)
+
+	if corners.shape[0] == 4: #all corners visible
+		status=0
+	else: 		#need to move ECM (todo)
+		status=0 #changed from 3 to 0 to run
+		return status
 
 	#For now, lets assume player is always 'x'
 	#if player is None: #player=readboardforplayer
@@ -189,11 +168,13 @@ def end_game (winner):
 		("Unknown Value inputed")
 
 
-if __name__ == "__main__":
 
+#NOT USED - see main.py.
+#testing only
+if __name__ == "__main__":
 	#create node
 	rospy.init_node('imageProc')
-
+'''
 	#initiate camera objects - these are subscribed to raw_images from dvrk cameras
 	left_cam = camera.camera('left')
 	right_cam = camera.camera('right')
@@ -201,28 +182,31 @@ if __name__ == "__main__":
 	#initiate ecm object
 	ecm = dvrk.arm('ECM')
 
-	r = rospy.Rate(100)
+	r = rospy.Rate(1000) # per second
 
 	print("started node")
 
 	while not rospy.is_shutdown():
 
+		#the first few calls happen before an image is sent by dvrk
+		#so the image variable (from *_cam.get_image) will be empty lists
+		#sleep until an image is sent and the image variable is no longer a list (should be CV image)
 		while isinstance(right_cam.get_image(), list):
 			r.sleep()
 			#print('sleeping')
-		print('complete')
-		'''	
+		#else:
+			#print('image received')
+			
 		#image processing function takes OpenCV image
 		status, board, coords_2dR, coords_pickupR, player = procImage(right_cam.get_image())
 
-		#if image is not in frame, move ECM
+		#Wait until player has moved (ex: 9 circles -> 8 circles)
 		while(status is not 0):
-			moveECM(status,ecm, r)
 			#look again
-			status, board, coords_2dR, coords_pickupR, player = procImage(right_cam.get_image())
-
-		#status is 0, get left image now
-		_, _, coords_2dL, coords_pickupL, _ = procImage(left_cam.get_image())
+			status, board, coords_2dR, coords_pickupR, player = procImage(right_cam.get_image(), status)
+		
+		#status is 0 (robot's turn), get left image now
+		_, _, coords_2dL, coords_pickupL, _ = procImage(left_cam.get_image(), status)
 
 		#play tictactoe
 		ind_to_play, winner = tictactoe.play(board, player)
@@ -231,6 +215,8 @@ if __name__ == "__main__":
 		if(winner is not 0):
 			end_game()
 
+
+		#2D to 3D------------------------------------------------------------------------------
 		#identify piece to play (x,y) in both cameras
 		coords_3d_pickup = findDepth(coords_pickupR[0], coords_pickupR[1],
 								coords_pickupL[0], yl = coords_pickupL[1])
@@ -240,9 +226,14 @@ if __name__ == "__main__":
 		xl, yl = coords_2dL[ind_to_play]
 		coords_3d_putdown = findDepth(xr,yr,xl,yl)
 
-
 		#combine into 1x6 array [pickup_coords, putdown_coords]
 		coords_3d = np.concatenate((coords_3d_pickup, coords_3d_putdown), axis=None)
+<<<<<<< HEAD
 		#self.pub.publish(coords_3d)
 		'''
 		r.sleep()
+=======
+		
+		r.sleep()
+'''
+>>>>>>> f048599d2786019484ab5d3b44ec255537fc3298
