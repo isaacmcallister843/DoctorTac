@@ -11,6 +11,7 @@ import argparse
 import time
 
 
+
 # Get the absolute paths of the folders
 image_processing_path = os.path.abspath("imageProcessing")
 trajectory_planning_path = os.path.abspath("trajecPlanning")
@@ -22,12 +23,24 @@ sys.path.append(trajectory_planning_path)
 import imageProccessing.camera as camera # DVRK camera code
 import trajecPlanning.Trajectory_PSM as trajecTools
 import imageProccessing.imageProcessingTools as imTools 
-
+import imageProccessing.Player as Player
+import imageProccessing.tictactoe as tictactoe
 if __name__ == '__main__':
 	
 	# ----- ROS Setup ---------
 	rospy.init_node('mainNode')
-	r = rospy.Rate(100)
+	r = rospy.Rate(1000) #per second
+
+	#Camera initiation
+	left_cam = camera.camera('left')
+	right_cam = camera.camera('right')
+	ecm = dvrk.arm('ECM')
+ 
+	#Gets coords of board. Uses circle detection. Board is game state.
+	boardR = imTools.findBoardCoords(right_cam.get_image())
+	boardL = imTools.findBoardCoords(left_cam.get_image())
+	status=9
+	player = 'X' 
 
 	def TrajecPlanningTest(): 
 		TrajctoryMain = trajecTools.TrajctoryNode(homeLocation = (-.04,.09))
@@ -40,5 +53,38 @@ if __name__ == '__main__':
 	TrajecPlanningTest()
 
 
+	while not rospy.is_shutdown():
 
-	
+		#the first few calls happen before an image is sent by dvrk
+		#so the image variable (from *_cam.get_image) will be empty lists
+		#sleep until an image is sent and the image variable is no longer a list (should be CV image)
+		while isinstance(right_cam.get_image(), list):
+			r.sleep()
+			#print('sleeping')
+		#else:
+			#print('cv file recieved')
+
+
+		#-------------Get 2D coordinates from image
+		
+		if status%2==1: #When status is odd, it waits for input, gets new board state, then u[]
+			input("Tell me when you placed your object")
+			boardR = imTools.getNewBoardState(boardR,status,right_cam.get_image()) #Changes game state and decrements status
+		elif status%2==0:
+			print('hello')
+			PickupCoordsR=Player.findPickupCoords(right_cam.get_image()) #Might want to add this to imageProcTools?
+			
+			#Get board index and putdown coords from cell
+			if tictactoe.check_winner(boardR,player):
+				print("Player Wins")
+			PutdownCoordsR=boardR[tictactoe.play(boardR,player)]
+			#3Dpickup, 3Dputdown = findDepth(pickup,putdown)
+			#Trajectory Planning
+			boardR=imTools.getNewBoardState(boardR,status,right_cam.get_image())
+
+			if tictactoe.check_winner(boardR,'O'):
+				print("computer wins")
+			if tictactoe.check_draw(boardR):
+				print("draw")
+			
+		r.sleep()

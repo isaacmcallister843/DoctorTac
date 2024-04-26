@@ -11,7 +11,7 @@ Based on image processing, code either waits for player to move, moves ECM so bo
 Image processing determines tictactoe matrix of play, coordinates of board, coordinates of 1 of remaining pieces
 3D Coordinates for piece-to-pick-up and spot-to-put-down are published to "coordinates_3d" topic
 
-TODO
+#TODO
 	- all the image processing stuff (Ben)
 	- camera calibration matrix
 	- verification (all!)
@@ -23,11 +23,7 @@ TODO
 
 '''
 
-
-#Random Empty File. 
-#! /usr/bin/env python
-
-
+#Neccessary libraries
 import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image
@@ -46,13 +42,6 @@ import os
 import imageProccessing.camera as camera
 import imageProccessing.tictactoe as tictactoe
 
-
-#Constants for MoveECM function & status variable
-leftBoundary	= 150
-rightBoundary 	= -150
-upperBoundary 	= 150
-lowerBoundary 	= -150
-
 #keeps track of coordinates and value (X,O,blank)
 class boardsquare:
 	def __init__(self,x_coord,y_coord,tile):
@@ -62,12 +51,22 @@ class boardsquare:
 
 	def isFull(self):
 		return not (self.tile is None)
-		
 
+
+#Constants for MoveECM function & status variable
+leftBoundary	= 150
+rightBoundary 	= -150
+upperBoundary 	= 150
+lowerBoundary 	= -150
+		
 #Function is used to turn 2d coordinates into 3d coordinates
 def findDepth(ur,vr,ul,vl):
 
 	#Calibration from lab (do not edit):
+	#ur = 144, vr =0, ul=89. vl=200
+	#Assume its in pixel coords
+	#is camera calibrations matrices in different coords?
+	
 	calib_matrixR = np.array([[1996.53569, 0, 936.08872, -11.36134],
 				 [0, 1996.53569, 459.10171, 0],
 				 [0, 0, 1, 0,]])
@@ -121,6 +120,43 @@ amera.
 
 	return(coords_3d)
 
+def findBoardCoords(image):
+	cells = Player.get_board_template(image)
+	board = [None] * 9 
+	for i in range(9):
+		xcoord=cells[i][0]
+		ycoord=cells[i][1]
+		shape=None
+		board[i]=boardsquare(xcoord,ycoord,shape)
+	return board
+
+def getNewBoardState(board,status,image, tolerance=20):
+	current_circles=Player.findcurrentboardcoords(image)
+	current_positions=[(c[0], c[1]) for c in current_circles]  # List of current (x, y) positions
+
+	# Initialize a match found flag for each board square
+	matched=[False]*len(board)
+	
+	# Loop through each board square and determine the closest current circle
+	for i, square in enumerate(board):
+		closest_dist = float('inf')
+		for (cx, cy) in current_positions:
+			dist = np.sqrt((square.x_coord - cx) ** 2 + (square.y_coord - cy) ** 2)
+			if dist < closest_dist:
+				closest_dist = dist
+			#If the closest circle is within the tolerance and the square is not yet covered, it's considered unchanged
+		if closest_dist <= tolerance:
+			matched[i] = True
+
+	# Update board squares where no close circle was found
+	for i, square in enumerate(board):
+		if not matched[i] and square.tile is None:
+			if status%2==1:
+				square.tile = 'X'  # Mark the square as covered with an 'X' or 'O'
+			elif status%2==0:
+				square.tile = 'O'
+			status-=1
+	return board
 
 def procImage(image):
 	#if image is not fully in frame, send 'status' to tell ECM to move
@@ -166,23 +202,7 @@ def procImage(image):
 	
 	return status, board, coords_2d, coords_pickup, player
 
-def moveECM(status,ecm,r):
 
-	#start position
-	goal = ecm.setpoint_cp()
-
-	if status is 9:
-		r.sleep() #player hasn't finished playing, just sleep
-	elif status is 1:
-		goal.p[1] += 0.05 #move 5cm +y
-	elif status is 2:
-		goal.p[1] -= 0.05 #move 5cm -y
-	elif status is 3:
-		goal.p[0] += 0.05 #move 5cm +x
-	elif status is 2:
-		goal.p[0] -= 0.05 #move 5cm -x
-
-	ecm.move_cp(goal).wait()
 
 def end_game (winner):
 	i=0
@@ -195,62 +215,3 @@ def end_game (winner):
 		print("Draw Game")
 	else:
 		("Unknown Value inputed")
-
-
-if __name__ == "__main__":
-
-	#create node
-	rospy.init_node('imageProc')
-
-	#initiate camera objects - these are subscribed to raw_images from dvrk cameras
-	left_cam = camera.camera('left')
-	right_cam = camera.camera('right')
-
-	#initiate ecm object
-	ecm = dvrk.arm('ECM')
-
-	r = rospy.Rate(100)
-
-	print("started node")
-
-	while not rospy.is_shutdown():
-
-		while isinstance(right_cam.get_image(), list):
-			r.sleep()
-			#print('sleeping')
-		print('complete')
-		'''	
-		#image processing function takes OpenCV image
-		status, board, coords_2dR, coords_pickupR, player = procImage(right_cam.get_image())
-
-		#if image is not in frame, move ECM
-		while(status is not 0):
-			moveECM(status,ecm, r)
-			#look again
-			status, board, coords_2dR, coords_pickupR, player = procImage(right_cam.get_image())
-
-		#status is 0, get left image now
-		_, _, coords_2dL, coords_pickupL, _ = procImage(left_cam.get_image())
-
-		#play tictactoe
-		ind_to_play, winner = tictactoe.play(board, player)
-
-		#someone has won game or draw. end game sequence
-		if(winner is not 0):
-			end_game()
-
-		#identify piece to play (x,y) in both cameras
-		coords_3d_pickup = findDepth(coords_pickupR[0], coords_pickupR[1],
-								coords_pickupL[0], yl = coords_pickupL[1])
-
-		#identify location to play (x,y) in both cameras
-		xr, yr = coords_2dR[ind_to_play]
-		xl, yl = coords_2dL[ind_to_play]
-		coords_3d_putdown = findDepth(xr,yr,xl,yl)
-
-
-		#combine into 1x6 array [pickup_coords, putdown_coords]
-		coords_3d = np.concatenate((coords_3d_pickup, coords_3d_putdown), axis=None)
-		#self.pub.publish(coords_3d)
-		'''
-		r.sleep()
