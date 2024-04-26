@@ -2,7 +2,6 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-
 # bbad code 
 class forwardTrajectory(object):
     
@@ -102,20 +101,6 @@ class forwardTrajectory(object):
 
     def returnJustVel(self): 
         return np.array([self.path(t)[1] for t in self.time_values])
-
-    def createPlot3D(self):  
-        arr = self.generatePoints()
-
-        fig = plt.figure()
-        ax = fig.gca(projection='3d')
-
-        for point in arr:
-           ax.scatter(point[0][0], point[0][1], point[0][2], c='b')
-        ax.set_xlabel('X Label')
-        ax.set_ylabel('Y Label')
-        ax.set_zlabel('Z Label')
-
-        plt.show()
 
     def createPlot(self): 
         arr = self.generatePoints()
