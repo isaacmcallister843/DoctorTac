@@ -25,8 +25,6 @@ def find_circles(frame, dp=1.2, min_dist=100, param1=100, param2=30, min_radius=
     # Convert the circle parameters (x, y, radius) to integers
     circles = np.round(circles[0, :, :2]).astype("int")  # Extract only the x, y coordinates
     
-    return circles
-    
     #Testing code to see what values are found:
     #print("circle numbers", circles) #Print circle Coordinates to Terminal
     #first_circle_coords = circles[0:2] #X,Y Coordinates found
@@ -90,23 +88,9 @@ def preprocess_input(img):
     img = np.expand_dims(img, axis=0)
     return img.astype(np.float32) / 255
 
-def contrast_image(img):
-	# converting to LAB color space
-	lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-	l_channel, a, b = cv2.split(lab)
-
-	# Applying CLAHE to L-channel
-	# feel free to try different values for the limit and grid size:
-	clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-	cl = clahe.apply(l_channel)
-
-	# merge the CLAHE enhanced L-channel with the a and b channel
-	limg = cv2.merge((cl,a,b))
-
-	# Converting image from LAB Color model to BGR color spcae
-	enhanced_img = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
-
-	# Stacking the original image with the enhanced image
-	result = np.hstack((img, enhanced_img))
-	#cv2.imshow('Result', result)
-	return result
+def cleanupImage(frame):
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5)) #Get Kernel Size
+    blurred = cv2.GaussianBlur(frame, (5, 5), 0) #Apply Gaussian Blue
+    closed = cv2.morphologyEx(blurred, cv2.MORPH_CLOSE, kernel) #Morphological closed Filter
+    opened = cv2.morphologyEx(closed, cv2.MORPH_OPEN, kernel) #Morphological Open Filter
+    return opened

@@ -11,7 +11,6 @@
 
 import random
 
-
 def check_winner(board, player):
     # Check rows
     for row in board:

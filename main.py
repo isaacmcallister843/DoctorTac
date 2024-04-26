@@ -11,6 +11,7 @@ import argparse
 import time
 
 
+
 # Get the absolute paths of the folders
 image_processing_path = os.path.abspath("imageProcessing")
 trajectory_planning_path = os.path.abspath("trajecPlanning")
@@ -22,6 +23,7 @@ sys.path.append(trajectory_planning_path)
 import imageProccessing.camera as camera # DVRK camera code
 import trajecPlanning.Trajectory_PSM as trajecTools
 import imageProccessing.imageProcessingTools as imTools 
+import imageProccessing.Player as Player
 
 if __name__ == '__main__':
 	
@@ -56,6 +58,12 @@ if __name__ == '__main__':
 	left_cam = camera.camera('left')
 	right_cam = camera.camera('right')
 	#ecm = dvrk.arm('ECM')
+ 
+	#Gets coords of board. Uses circle detection. Board is game state.
+	boardR = imTools.findBoardCoords(right_cam.get_image())
+	boardL = imTools.findBoardCoords(left_cam.get_image())
+	status=9
+
 
 	#TrajctoryMain.returnHome()
 
@@ -72,9 +80,19 @@ if __name__ == '__main__':
 
 
 		#-------------Get 2D coordinates from image
-  
-		status = 0 #set status to 0, procImage will change it if needed.
+		if status%2==1: #When status is odd, it waits for input, gets new board state, then u[]
+			input("Tell me when you placed your object")
+			boardR = imTools.getNewBoardState(boardR,status,right_cam.get_image()) #Changes game state and decrements status
+			#inputstatus,
+		elif status%2==0:
+			print('hello')
+			PickupCoordsR=Player.findPickupCoords(right_cam.get_image()) #Might want to add this to imageProcTools?
+			#putdown coords = tictactoe(board, img)
+			#3Dpickup, 3Dputdown = findDepth(pickup,putdown)
+			boardR=imTools.getNewBoardState(boardR,status,right_cam.get_image()) #changes game state and decrement status
+			
 
+		status = 0 #set status to 0, procImage will change it if needed.
 		#image processing function takes OpenCV image
 		status, board, coords_2dR, coords_pickupR, player = imTools.procImage(right_cam.get_image(), status)
 
@@ -135,4 +153,4 @@ if __name__ == '__main__':
 
 		#todo: trajectory planning
 		
-		r.sleep()
+		r.sleep() #is this supposed to be in loop?
