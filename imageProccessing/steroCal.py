@@ -126,7 +126,7 @@ if __name__ == '__main__':
     R, T = stereo_calibrate(mtx1, dist1, mtx2, dist2, "C:\\Users\\bobsy\\Documents\\GitHub\\DoctorTac\\imageProccessing\\Images\\*")
 
     #need to get points from both cameras to triangulate
-    #TODO these below ones are just examples
+    #TO DO these below ones are just examples
     '''
     #these are the images where the points are taken from
     frame1 = cv.imread('testing/_C1.png')
