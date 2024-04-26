@@ -55,6 +55,10 @@ def stereo_calibrate(mtx1, dist1, mtx2, dist2, frames_folder):
         gray2 = cv.cvtColor(frame2, cv.COLOR_BGR2GRAY)
         c_ret1, corners1 = cv.findChessboardCorners(gray1, (5, 8), None)
         c_ret2, corners2 = cv.findChessboardCorners(gray2, (5, 8), None)
+        cv.imshow('img',frame1)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
+        
  
         if c_ret1 == True and c_ret2 == True:
             corners1 = cv.cornerSubPix(gray1, corners1, (11, 11), (-1, -1), criteria)
@@ -101,8 +105,8 @@ def DLT(P1, P2, point1, point2):
 if __name__ == '__main__':
 
     #trying to resolve image problems----------------------
-    i = cv.imread('C:\\Users\\User\\Desktop\\doctor_tic\\imageProccessing\\Images\\1left.png',0)
-    print(i)
+    #i = cv.imread('C:\\Users\\User\\Desktop\\doctor_tic\\imageProccessing\\Images\\1left.png',0)
+   # print(i)
 
     #-------------------------------------------------------
 
@@ -119,7 +123,7 @@ if __name__ == '__main__':
     dist2 = np.array([-0.276, 0.63499, 0.00393, 0.000713, -1.9277])
     
     #stereo calibration
-    R, T = stereo_calibrate(mtx1, dist1, mtx2, dist2, "C:\\Users\\User\\Desktop\\doctor_tic\\imageProccessing\\Images\\*")
+    R, T = stereo_calibrate(mtx1, dist1, mtx2, dist2, "C:\\Users\\bobsy\\Documents\\GitHub\\DoctorTac\\imageProccessing\\Images\\*")
 
     #need to get points from both cameras to triangulate
     #TODO these below ones are just examples
