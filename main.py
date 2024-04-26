@@ -24,7 +24,7 @@ import imageProccessing.camera as camera # DVRK camera code
 import trajecPlanning.Trajectory_PSM as trajecTools
 import imageProccessing.imageProcessingTools as imTools 
 import imageProccessing.Player as Player
-
+import imageProccessing.tictactoe as tictactoe
 if __name__ == '__main__':
 	
 	# ----- ROS Setup ---------
@@ -63,6 +63,7 @@ if __name__ == '__main__':
 	boardR = imTools.findBoardCoords(right_cam.get_image())
 	boardL = imTools.findBoardCoords(left_cam.get_image())
 	status=9
+	player = 'X' 
 
 
 	#TrajctoryMain.returnHome()
@@ -80,18 +81,29 @@ if __name__ == '__main__':
 
 
 		#-------------Get 2D coordinates from image
+		
 		if status%2==1: #When status is odd, it waits for input, gets new board state, then u[]
 			input("Tell me when you placed your object")
 			boardR = imTools.getNewBoardState(boardR,status,right_cam.get_image()) #Changes game state and decrements status
-			#inputstatus,
 		elif status%2==0:
 			print('hello')
 			PickupCoordsR=Player.findPickupCoords(right_cam.get_image()) #Might want to add this to imageProcTools?
-			#putdown coords = tictactoe(board, img)
-			#3Dpickup, 3Dputdown = findDepth(pickup,putdown)
-			boardR=imTools.getNewBoardState(boardR,status,right_cam.get_image()) #changes game state and decrement status
 			
+			#Get board index and putdown coords from cell
+			if tictactoe.check_winner(boardR,player):
+				print("Player Wins")
+			PutdownCoordsR=boardR[tictactoe.play(boardR,player)]
+			#3Dpickup, 3Dputdown = findDepth(pickup,putdown)
+			#Trajectory Planning
+			boardR=imTools.getNewBoardState(boardR,status,right_cam.get_image())
 
+			if tictactoe.check_winner(boardR,'O'):
+				print("computer wins")
+			if tictactoe.check_draw(boardR):
+				print("draw")
+			
+			
+		'''
 		status = 0 #set status to 0, procImage will change it if needed.
 		#image processing function takes OpenCV image
 		status, board, coords_2dR, coords_pickupR, player = imTools.procImage(right_cam.get_image(), status)
@@ -152,5 +164,5 @@ if __name__ == '__main__':
   
 
 		#todo: trajectory planning
-		
+		'''
 		r.sleep() #is this supposed to be in loop?
