@@ -69,4 +69,4 @@ def play(board, player):
         return space_to_play, 3  # Game over, draw
 
     # No winner yet, continue play
-    return space_to_play, 0
+    return space_to_play, 

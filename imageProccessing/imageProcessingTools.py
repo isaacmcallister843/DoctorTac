@@ -33,7 +33,7 @@ from geometry_msgs.msg import TransformStamped
 import std_msgs
 import cv2 #Vision toolbox
 import numpy as np #Matrix toolbox
-import imageProccessing.Player as Player #Bens vision code
+import imageProccessing.AnalysisOpenCV as AnalysisOpenCV #Bens vision code
 import dvrk #DVRK toolbox
 import sys
 from scipy.spatial.transform import Rotation as R
@@ -52,13 +52,6 @@ class boardsquare:
 	def isFull(self):
 		return not (self.tile is None)
 
-
-#Constants for MoveECM function & status variable
-leftBoundary	= 150
-rightBoundary 	= -150
-upperBoundary 	= 150
-lowerBoundary 	= -150
-		
 #Function is used to turn 2d coordinates into 3d coordinates
 def findDepth(ur,vr,ul,vl):
 
@@ -120,8 +113,21 @@ amera.
 
 	return(coords_3d)
 
+def cameraToWorldChange(pixelCoords,Scale):
+	calib_matrixR = np.array([[1996.53569, 0, 936.08872, -11.36134],
+						   [0, 1996.53569, 459.10171, 0],
+						   [0, 0, 1, 0,]])
+	
+	oxPixel = calib_matrixR[0][2]
+	oyPixel = calib_matrixR[1][2]
+
+	oxReal = oxPixel +pixelCoords[0]*Scale
+	oyReal = oyPixel +pixelCoords[1]*Scale
+
+	return [oxReal,oyReal]
+
 def findBoardCoords(image):
-	cells = Player.get_board_template(image)
+	cells = AnalysisOpenCV.get_board_template(image)
 	board = [None] * 9 
 	for i in range(9):
 		xcoord=cells[i][0]
@@ -131,7 +137,7 @@ def findBoardCoords(image):
 	return board
 
 def getNewBoardState(board,status,image, tolerance=20):
-	current_circles=Player.findcurrentboardcoords(image)
+	current_circles=AnalysisOpenCV.findcurrentboardcoords(image)
 	current_positions=[(c[0], c[1]) for c in current_circles]  # List of current (x, y) positions
 
 	# Initialize a match found flag for each board square
@@ -158,51 +164,13 @@ def getNewBoardState(board,status,image, tolerance=20):
 			status-=1
 	return board
 
-def procImage(image):
-	#if image is not fully in frame, send 'status' to tell ECM to move
-	# 1= move y+, 2= move y-, 3=move x+, 4=move x-, 0=don't move
-	#if status=9, it isn't the robots turn yet (player still moving, player hasn't played)
-	#we get topdown image and corners array. if array is not 4, we currently move to the right.
-	#Need to fix this
-	topdownimage, corners = Player.find_board(image)
-
-	if corners.shape[0] == 4: #all corners visible
-		status=0
-	else: 		#need to move ECM (todo)
-		status=0 #changed from 3 to 0 to run
-		return status
-
-	#For now, lets assume player is always 'x'
-	#if player is None: #player=readboardforplayer
-	player = 'X' 
-	
-	#array corresponding to played squares
-	#Board will be initialized using read board to get the x and y coordinates of board and place it in board array.
-	#cells goes top left, middle left, right left, and holds another list (x,y,width,height)
-	cells = Player.get_board_template(topdownimage)
-	board = [None] * 9 
-	for i in range(9):
-		#shape = Player.find_shape(cells[i])
-		shape=None
-		xcoord= cells[i][0]
-		ycoord=cells[i][1]
-		board[i]=boardsquare(xcoord,ycoord,shape)
-		cv2.circle(topdownimage, (xcoord,ycoord), 10, (0, 255, 0), 2)
-	#cv2.imshow("image",topdownimage)
-	#cv2.waitKey(0)
-	#cv2.destroyAllWindows()
-	
-	#coordinates of one of the pieces (off to the side) to pick up
-	#coord_pickup=commented out becuase no circle
- 
-	coords_pickup = Player.find_triangles(topdownimage)
-	#coords_pickup=[0,0]
-	#Chatgpt function to turn 1d array into 2d numpy array for later usage.
-	coords_2d= np.array([[(board[row * 3 + col].x_coord, board[row * 3 + col].y_coord) for col in range(3)] for row in range(3)])
-	
-	return status, board, coords_2d, coords_pickup, player
-
-
+def findPickUpCoords(frame):
+	largest_contour=AnalysisOpenCV.findComputerPickupBlocks(frame)
+	M = cv2.moments(largest_contour)
+	if M["m00"] != 0:
+		cX = int(M["m10"] / M["m00"])
+		cY = int(M["m01"] / M["m00"])
+	return [cX,cY]
 
 def end_game (winner):
 	i=0

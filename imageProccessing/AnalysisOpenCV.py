@@ -4,7 +4,6 @@ import cv2
 import argparse
 import numpy as np
 import DetectionsOpenCV
-import imutils
 
 #import imageProccessing.imutils as imutils
 #import imageProccessing.DetectionsOpenCV as DetectionsOpenCV
@@ -56,7 +55,8 @@ def findcurrentboardcoords(frame):
     circle_coords = circle_coords[np.argsort(circle_coords[:, 0])] #sorts np.argsort
     return circle_coords
 
-def findPickupCoords(frame):
+
+def findComputerPickupBlocks(frame):
     #Pixels of board, only pickup of board
     '''Finds pickup location of detected coloured area. Will detect outside of pixel coords of board on Right side. Computer Pieces will be blue.'''
     # Convert the image to HSV color space
@@ -69,45 +69,20 @@ def findPickupCoords(frame):
     image_hsv=image_hsv[:, -pickupCoordsContourCutoff:]
 
     #Create upper and Lower Bounds of HSV range
-    lower_blue = np.array([100, 80, 50])
-    upper_blue = np.array([140, 255, 255])
+    #lower_blue = np.array([100, 80, 50])
+    #upper_blue = np.array([140, 255, 255])
+    lower_green = np.array([30, 40, 40])
+    upper_green = np.array([800, 255, 255])
     #Apply blue mask to image according to upper and lower bounds
-    blue_mask = cv2.inRange(image_hsv, lower_blue, upper_blue)
+    colour_mask = cv2.inRange(image_hsv, lower_green, upper_green)
     #Find contours for the blue blocks
-    blue_contours, _ = cv2.findContours(blue_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    colour_contours, _ = cv2.findContours(colour_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
+    #Return to Image Processing Tools
     #Find largest contour to find closest block & add pickupCutoff to fix image coords
-    largest_contour = max(blue_contours, key=cv2.contourArea)
+    largest_contour = max(colour_contours, key=cv2.contourArea)
     largest_contour[:, :, 0] += width-pickupCoordsContourCutoff
-    #Find center pickup pixel coords of block
-    M = cv2.moments(largest_contour)
-    if M["m00"] != 0:
-        cX = int(M["m10"] / M["m00"])
-        cY = int(M["m01"] / M["m00"])
-
-    return [cX,cY], largest_contour
-
-
-def contrast_image(img):
-	# converting to LAB color space
-	lab= cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-	l_channel, a, b = cv2.split(lab)
-
-	# Applying CLAHE to L-channel
-	# feel free to try different values for the limit and grid size:
-	clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-	cl = clahe.apply(l_channel)
-
-	# merge the CLAHE enhanced L-channel with the a and b channel
-	limg = cv2.merge((cl,a,b))
-
-	# Converting image from LAB Color model to BGR color spcae
-	enhanced_img = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
-
-	# Stacking the original image with the enhanced image
-	result = np.hstack((img, enhanced_img))
-	#cv2.imshow('Result', result)
-	return result
+    return largest_contour
 
 
 #########################################################
@@ -122,7 +97,7 @@ if __name__ == '__main__':
 
     pickupCoords, largest_contour = findPickupCoords(img)
     board=get_board_template(img)
-    print(board)
+    print(board) #Delete Later
     for i in range(9):
         gridCoord=board[i]
         cv2.circle(img, gridCoord, radius = 5, color = (255,0,0), thickness = -1)
