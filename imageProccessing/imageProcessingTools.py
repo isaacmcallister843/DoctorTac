@@ -38,8 +38,8 @@ import dvrk #DVRK toolbox
 import sys
 from scipy.spatial.transform import Rotation as R
 import os
-#import imageProccessing.camera as camera # DVRK camera code Comment bottom and uncomment this
-import imageProccessing.camera as camera
+import imageProccessing.camera as camera # DVRK camera code Comment bottom and uncomment this
+#import camera
 import imageProccessing.tictactoe as tictactoe
 
 #keeps track of coordinates and value (X,O,blank)
@@ -130,7 +130,7 @@ def findBoardCoords(image):
 		board[i]=boardsquare(xcoord,ycoord,shape)
 	return board
 
-def getNewBoardState(board,status,image, tolerance=20):
+def getNewBoardState(board,status,image, tolerance=100):
 	current_circles=Player.findcurrentboardcoords(image)
 	current_positions=[(c[0], c[1]) for c in current_circles]  # List of current (x, y) positions
 
@@ -156,7 +156,10 @@ def getNewBoardState(board,status,image, tolerance=20):
 			elif status%2==0:
 				square.tile = 'O'
 			status-=1
-	return board
+	
+	for i in range(9):
+		print(board[i].tile)
+	return board,status
 
 def procImage(image):
 	#if image is not fully in frame, send 'status' to tell ECM to move

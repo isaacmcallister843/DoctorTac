@@ -37,7 +37,7 @@ class camera:
 		#Subscribe to ros node that publishes images from the ECM (for real robot) - Changed to compressed image
 		#For ECM, use '/decklink/camera/image_raw/compressed'. For DVRK simulator, use '/image_raw/compressed'
 		full_ros_namespace = self.__ros_namespace + self.__camera_name + '/decklink/camera/image_raw/compressed'
-
+		print(full_ros_namespace)
 		#Subscribe to ROS Node where images are published from ECM.
 		rospy.Subscriber(full_ros_namespace, CompressedImage, self.image_callback, queue_size = 1, buff_size = 1000000)
 
@@ -45,6 +45,7 @@ class camera:
 		'''
 		Function to change ROS Image Messages to CV2 messages using RGB8 Colour Space.
 		'''
+		
 		try:
 			self.cv_image = self.bridge.compressed_imgmsg_to_cv2(data, "bgr8") #Image converted from data variable to CV2 Image
 		#	print('Image_Callback Successful') #Used to proper image confirmation to Terminal

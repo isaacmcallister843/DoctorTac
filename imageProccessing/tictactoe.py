@@ -1,5 +1,5 @@
 import random
-from imageProccessing.Player import BoardSquare
+#from imageProccessing.Player import BoardSquare
 
 def check_winner(board, player):
     # Check rows
@@ -37,14 +37,14 @@ def computer_move(board, computer):
         if board[idx].tile is None:
             board[idx].tile = computer
             if check_winner(board, computer):
-                return divmod(idx, 3)  # Returning approximate grid position
+                return idx  # Returning approximate grid position
             board[idx].tile = None
 
     # Prioritize corners, center, then edges
     priority = [0, 2, 6, 8, 4, 1, 3, 5, 7]  # Priority positions
     for idx in priority:
         if board[idx].tile is None:
-            return divmod(idx, 3)  # Returning approximate grid position
+            return idx  # Returning approximate grid position
 
 def play(board, player):
     # Set computer variable opposite to player
@@ -55,7 +55,8 @@ def play(board, player):
         return [0, 0], 1  # Game over, player won
 
     # Determine move for computer
-    row, col = computer_move(board, computer)
+    index = computer_move(board, computer)
+    return index
     space_to_play = [row, col]
 
     #board[row * 3 + col].tile = computer  # Update board with computer's move - will be updated on next run
@@ -69,4 +70,4 @@ def play(board, player):
         return space_to_play, 3  # Game over, draw
 
     # No winner yet, continue play
-    return space_to_play, 0
+    return space_to_play
