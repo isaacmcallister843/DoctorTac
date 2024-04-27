@@ -34,51 +34,44 @@ if __name__ == '__main__':
 	right_cam = camera.camera('right')
 	ecm = dvrk.arm('ECM')
  
+	#the first few calls happen before an image is sent by dvrk
+	#so the image variable (from *_cam.get_image) will be empty lists
+	#sleep until an image is sent and the image variable is no longer a list (should be CV image)
+	print("before")
+	while isinstance(right_cam.get_image(), list):
+		r.sleep()
+		#print('sleeping')
+	else:
+		print('cv file recieved')
+  
 	#Gets coords of board. Uses circle detection. Board is game state.
 	boardR = imTools.findBoardCoords(right_cam.get_image())
 	boardL = imTools.findBoardCoords(left_cam.get_image())
 	status = 9
 	player = 'X' 
-
-	def TrajecPlanningTest(): 
-		TrajctoryMain = trajecTools.TrajctoryNode(homeLocation = (-.04,.09))
-		TrajctoryMain.defualtZLayer = -.04
-		time.sleep(1)
-		TrajctoryMain.returnHomeFree()
-		time.sleep(1)
-		TrajctoryMain.pickAndPlace2(pickLocation=(-.08,.026), placeLocation=(-.001,.007))
 	
-	TrajecPlanningTest()
-
-
+	print("about to start")
 	while not rospy.is_shutdown():
 
-		#the first few calls happen before an image is sent by dvrk
-		#so the image variable (from *_cam.get_image) will be empty lists
-		#sleep until an image is sent and the image variable is no longer a list (should be CV image)
-		while isinstance(right_cam.get_image(), list):
-			r.sleep()
-			#print('sleeping')
-		#else:
-			#print('cv file recieved')
-
-
+			
 		#-------------Get 2D coordinates from image
 		
 		if status%2==1: #When status is odd, it waits for input, gets new board state, then u[]
 			input("Player Turn - Tell me when you placed your object")
-			boardR = imTools.getNewBoardState(boardR,status,right_cam.get_image()) #Changes game state and decrements status
+			boardR,status= imTools.getNewBoardState(boardR,status,right_cam.get_image()) #Changes game state and decrements status
 		elif status%2==0:
-			print('Computer Turn')
-			PickupCoordsR=imTools.findPickUpCoords(right_cam.get_image())
-			
+			print("Computer Turn")
+			PickupCoordsR,imagecentroid=imTools.findPickUpCoords(right_cam.get_image()) #Might want to add this to imageProcTools?
+			print(PickupCoordsR)
 			#Get board index and putdown coords from cell
 			if tictactoe.check_winner(boardR,player):
 				print("Player Wins")
-			PutdownCoordsR=boardR[tictactoe.play(boardR,player)]
+			#PutdownCoordsR=[boardR[tictactoe.play(boardR,player)].xcoord,boardR[tictactoe.play(boardR,player)].ycoord]
+			index=tictactoe.play(boardR,player)
+			print(index)
 			#3Dpickup, 3Dputdown = findDepth(pickup,putdown)
 			#Trajectory Planning
-			boardR=imTools.getNewBoardState(boardR,status,right_cam.get_image())
+			boardR,status=imTools.getNewBoardState(boardR,status,right_cam.get_image())
 
 			if tictactoe.check_winner(boardR,'O'):
 				print("computer wins")
@@ -86,3 +79,6 @@ if __name__ == '__main__':
 				print("draw")
 			
 		r.sleep()
+		
+		
+

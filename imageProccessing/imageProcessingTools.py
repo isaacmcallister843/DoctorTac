@@ -38,8 +38,8 @@ import dvrk #DVRK toolbox
 import sys
 from scipy.spatial.transform import Rotation as R
 import os
-#import imageProccessing.camera as camera # DVRK camera code Comment bottom and uncomment this
-import imageProccessing.camera as camera
+import imageProccessing.camera as camera # DVRK camera code Comment bottom and uncomment this
+#import camera
 import imageProccessing.tictactoe as tictactoe
 
 #keeps track of coordinates and value (X,O,blank)
@@ -162,7 +162,10 @@ def getNewBoardState(board,status,image, tolerance=20):
 			elif status%2==0:
 				square.tile = 'O'
 			status-=1
-	return board
+	
+	for i in range(9):
+		print(board[i].tile)
+	return board,status
 
 def findPickUpCoords(frame):
 	largest_contour=AnalysisOpenCV.findComputerPickupBlocks(frame)

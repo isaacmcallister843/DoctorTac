@@ -14,20 +14,21 @@ import rospy
 
 class TrajctoryNode(object):
 
-    def __init__(self, homeLocation):
+    def __init__(self, homeLocation, orientation: PyKDL.Rotation):
         self.jacobian_val = None  
-        self.subscriber = rospy.Subscriber( '/PSM1/body/jacobian', Float64MultiArray, self.jacobian_callback, queue_size=1)
-        
+        self.subscriber = rospy.Subscriber( '/PSM1/body/jacobian', Float64MultiArray, self.jacobian_callback, queue_size=1)        
         p = dvrk.psm('PSM1') 
         p.enable()
         p.home()
+        self.orientation = orientation
 
         self.p = p 
                 
         self.defualtTotalTime = 1.1
         self.defualtFreq = 50
         self.defualtZLayer = -.1135
-        self.defualtExtensionHeight = .01
+        self.extensionLayer = -.01
+
 
         self.homeLocation = homeLocation 
         self.currentLocation = p.measured_cp().p
@@ -35,7 +36,7 @@ class TrajctoryNode(object):
 
     def jacobian_callback(self, msg):
         """
-        Callback function that receives the Jacobian data and stores it.
+        Callback function thatTrajectory_PSM receives the Jacobian data and stores it.
         """
         jac_data = np.array(msg.data)
         self.jacobian_val = jac_data.reshape((6, 6))
@@ -45,14 +46,15 @@ class TrajctoryNode(object):
                 Go back to neutral locaiton  
         """
         self.moveCoordinate(self.homeLocation)
+        
 
     def returnHomeFree(self): 
         targetPos = PyKDL.Vector(self.homeLocation[0], self.homeLocation[1], self.defualtZLayer)
         goal = self.p.measured_cp()
         goal.p = targetPos
+        goal.M = self.orientation
         self.p.move_cp(goal).wait()
         self.currentLocation = self.p.measured_cp().p
-         
 
 
     def executePath(self, currentPath):
@@ -162,16 +164,14 @@ class TrajctoryNode(object):
 
     def moveCoordinate(self, targetCoordinate, Zlevel = None): 
         if Zlevel is None: 
-             Zlevel = self.defualtZLayer 
+             Zlevel = self.defualtZLayer
         
-        intermediatePoint = [(self.currentLocation[0] + targetCoordinate[0])/2, (self.currentLocation[1] + targetCoordinate[1])/2 ]
-
-        targetPos = PyKDL.Vector(intermediatePoint[0], intermediatePoint[1], Zlevel-.015)
+        targetPos = PyKDL.Vector((targetCoordinate[0] + self.currentLocation[0])/2, (targetCoordinate[1] + self.currentLocation[1])/2, Zlevel-.015)
         goal = self.p.measured_cp()
         goal.p = targetPos
         self.p.move_cp(goal).wait()
         self.currentLocation = self.p.measured_cp().p
-
+        
         print("Target Position: ", targetPos)
         print("Current Location: ", self.currentLocation)
         time.sleep(1)
@@ -184,12 +184,20 @@ class TrajctoryNode(object):
         print("Target Position: ", targetPos)
         print("Current Location: ", self.currentLocation)
 
+
+    def moveCoordinateFree(self, targetCoordinate, targetZlayer = None):
+        if (targetZlayer is None): 
+              targetZlayer = self.defualtZLayer
+        targetPos = PyKDL.Vector(targetCoordinate[0], targetCoordinate[1], targetZlayer)
+        goal = self.p.measured_cp()
+        goal.p = targetPos
+        self.p.move_cp(goal).wait()
+        self.currentLocation = self.p.measured_cp().p
     
-    def pickAndPlace2(self, pickLocation, placeLocation, zHeight  =  None, extenstionHeight = None): 
+    def pickAndPlace2(self, pickLocation, placeLocation, zHeight  =  None): 
         if zHeight is None: 
                 zHeight  = self.defualtZLayer
-        if extenstionHeight is None: 
-                extenstionHeight = self.defualtExtensionHeight
+        
         
         
         self.moveCoordinate(pickLocation) 
@@ -198,7 +206,7 @@ class TrajctoryNode(object):
         time.sleep(1)
         self.p.jaw.open()
         time.sleep(1)
-        self.zAdjust(-.02)
+        self.zAdjust(self.extensionLayer)
         time.sleep(1)
         self.p.jaw.close()
         time.sleep(1)
@@ -209,7 +217,7 @@ class TrajctoryNode(object):
         print("Target Location: ", placeLocation)
         print("Actual Location: ", self.p.measured_cp().p)
         time.sleep(1)
-        self.zAdjust(-.02)
+        self.zAdjust(self.extensionLayer)
         time.sleep(1)
         self.p.jaw.open()
         time.sleep(1)

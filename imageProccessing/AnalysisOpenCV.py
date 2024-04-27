@@ -3,7 +3,7 @@ import sys
 import cv2
 import argparse
 import numpy as np
-import DetectionsOpenCV
+import imageProccessing.DetectionsOpenCV as DetectionsOpenCV
 
 #import imageProccessing.imutils as imutils
 #import imageProccessing.DetectionsOpenCV as DetectionsOpenCV
@@ -13,8 +13,8 @@ gridCircleCutoff=900 #Constant to change how much of image is checked for grid
 
 def get_board_template(frame):
     '''Finds Board Coordinates using Circle Detection - Only detects left side of Image'''
-    height, width = frame.shape[:2]  # The first two elements are height and width
-    frame=frame[:, :gridCircleCutoff]
+    #height, width = frame.shape[:2]  # The first two elements are height and width
+    #frame=frame[:, :gridCircleCutoff]
     circle_coords=DetectionsOpenCV.find_circles(frame) #Finds circle coordinates using find_Circles
     circle_coords=circle_coords.reshape(-1,2) #Resize array
     sorted_groups = [] #New array to hold sorted values, as circle_Coords is unsorted.
@@ -48,8 +48,7 @@ def get_board_template(frame):
 
 def findcurrentboardcoords(frame):
     '''Finds Current Board state. Output compared against previous board state'''
-    thresh=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY) #Changes image to black and white colour space.
-    circle_coords=DetectionsOpenCV.find_circles(thresh) #Finds circle coordinates using find_Circles
+    circle_coords=DetectionsOpenCV.find_circles(frame)#Finds circle coordinates using find_Circles
     circle_coords=circle_coords.reshape(-1,2) #Resize array
     sorted_groups = [] #New array to hold sorted values, as circle_Coords is unsorted.
     circle_coords = circle_coords[np.argsort(circle_coords[:, 0])] #sorts np.argsort
@@ -65,7 +64,7 @@ def findComputerPickupBlocks(frame):
     image_hsv=DetectionsOpenCV.cleanupImage(image_hsv)
 
     #Get Boundaries for where to detect for blocks. For this it will check the right 100 Pixels of image
-    height, width = img.shape[:2]  # The first two elements are height and width
+    height, width = image_hsv.shape[:2]  # The first two elements are height and width
     image_hsv=image_hsv[:, -pickupCoordsContourCutoff:]
 
     #Create upper and Lower Bounds of HSV range
