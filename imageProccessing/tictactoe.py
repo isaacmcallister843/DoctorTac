@@ -70,8 +70,5 @@ def play(board, player):
         return space_to_play, 3  # Game over, draw
 
     # No winner yet, continue play
-<<<<<<< HEAD
-    return space_to_play, 
-=======
-    return space_to_play
->>>>>>> d387e8156ebfdca6f87a3f3161c46633f48d091d
+    return space_to_play, 0
+ 
