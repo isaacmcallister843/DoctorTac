@@ -3,7 +3,8 @@ import sys
 import cv2
 import argparse
 import numpy as np
-import imageProccessing.DetectionsOpenCV as DetectionsOpenCV
+#import imageProccessing.DetectionsOpenCV as DetectionsOpenCV
+import DetectionsOpenCV
 
 #import imageProccessing.imutils as imutils
 #import imageProccessing.DetectionsOpenCV as DetectionsOpenCV
@@ -88,21 +89,21 @@ def findComputerPickupBlocks(frame):
     #Read image
 if __name__ == '__main__':
 
-    img = cv2.imread('C:/Users/bobsy/Downloads/Test_Both.jpg')
+    img = cv2.imread('C:/Users/bobsy/Downloads/Test_BoardTemplate.jpg')
     if img is None:
         print("Failed to load image.")
     else:
         print("Image loaded successfully.")
 
-    pickupCoords, largest_contour = findPickupCoords(img)
+    #largest_contour = findComputerPickupBlocks(img)
     board=get_board_template(img)
     print(board) #Delete Later
     for i in range(9):
         gridCoord=board[i]
         cv2.circle(img, gridCoord, radius = 5, color = (255,0,0), thickness = -1)
     # Draw the largest contour for visualization & Draw center coordinate.
-    cv2.drawContours(img, [largest_contour], -1, (0, 255, 0), 3)
-    cv2.circle(img, pickupCoords, radius = 5, color = (0,255,0), thickness = -1)
+    #cv2.drawContours(img, [largest_contour], -1, (0, 255, 0), 3)
+    #cv2.circle(img, pickupCoords, radius = 5, color = (0,255,0), thickness = -1)
     cv2.imshow('frame', img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

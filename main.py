@@ -23,6 +23,9 @@ import trajecPlanning.Trajectory_PSM as trajecTools
 import imageProccessing.imageProcessingTools as imTools 
 import imageProccessing.AnalysisOpenCV as AnalysisOpenCV
 import imageProccessing.tictactoe as tictactoe
+
+RobotScale = 0.0000854
+
 if __name__ == '__main__':
 	
 	# ----- ROS Setup ---------
@@ -61,18 +64,21 @@ if __name__ == '__main__':
 			boardR,status= imTools.getNewBoardState(boardR,status,right_cam.get_image()) #Changes game state and decrements status
 		elif status%2==0:
 			print("Computer Turn")
-			PickupCoordsR,imagecentroid=imTools.findPickUpCoords(right_cam.get_image()) #Might want to add this to imageProcTools?
-			print(PickupCoordsR)
+			
+			#FindPickupCoords
+			PickupCoordsR,imagecentroid=imTools.findPickUpCoords(right_cam.get_image()) 
+			PickupCoordsR= imTools.cameraToWorldChange(PickupCoordsR, RobotScale)
+			
 			#Get board index and putdown coords from cell
 			if tictactoe.check_winner(boardR,player):
 				print("Player Wins")
-			#PutdownCoordsR=[boardR[tictactoe.play(boardR,player)].xcoord,boardR[tictactoe.play(boardR,player)].ycoord]
-			index=tictactoe.play(boardR,player)
-			print(index)
-			#3Dpickup, 3Dputdown = findDepth(pickup,putdown)
+			PutdownCoordsR=[boardR[tictactoe.play(boardR,player)].xcoord,boardR[tictactoe.play(boardR,player)].ycoord]
+			PutdownCoordsR = imTools.cameraToWorldChange(PutdownCoordsR,RobotScale)
+			
 			#Trajectory Planning
+			
+			#Refresh Board State After moving Piece
 			boardR,status=imTools.getNewBoardState(boardR,status,right_cam.get_image())
-
 			if tictactoe.check_winner(boardR,'O'):
 				print("computer wins")
 			if tictactoe.check_draw(boardR):
