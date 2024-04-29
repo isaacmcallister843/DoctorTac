@@ -55,6 +55,10 @@ class boardsquare:
 #Function is used to turn 2d coordinates into 3d coordinates
 def findDepth(ur,vr,ul,vl):
 
+	#!!! Update: use DLT function in stereoCal instead
+	
+	#------------------------------old:
+
 	#Calibration from lab (do not edit):
 	#ur = 144, vr =0, ul=89. vl=200
 	#Assume its in pixel coords
@@ -72,7 +76,7 @@ def findDepth(ur,vr,ul,vl):
 	#									0 fy' cy' Ty
 	#									0 0 1 0]
 	# (see sensor_msgs/CameraInfro Message)
-	# So we don't need to decompose anything (red comments below) as we usually would need to
+	# So we don't need to decompose anything (read comments below) as we usually would need to
 	#instead:
 	fx = calib_matrixL[0][0]
 	fy = calib_matrixL[1][1]
