@@ -76,9 +76,12 @@ if __name__ == '__main__':
 			PutdownCoordsR = imTools.cameraToWorldChange(PutdownCoordsR,RobotScale)
 			
 			#Trajectory Planning
-			
+			trajecTools.pickAndPlace(PickupCoordsR,PutdownCoordsR)
+
 			#Refresh Board State After moving Piece
 			boardR,status=imTools.getNewBoardState(boardR,status,right_cam.get_image())
+
+			#Check for Computer Winning
 			if tictactoe.check_winner(boardR,'O'):
 				print("computer wins")
 			if tictactoe.check_draw(boardR):

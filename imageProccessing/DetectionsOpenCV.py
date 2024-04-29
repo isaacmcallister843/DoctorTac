@@ -12,7 +12,7 @@ import numpy as np
 def find_circles(frame, dp=1.2, min_dist=100, param1=100, param2=30, min_radius=1, max_radius=100):
     # Convert to grayscale and apply Gaussian blur
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    gray = cv2.GaussianBlur(gray, (9, 9), 2, 2)
+    gray = cleanupImage(frame)
     
     # Apply Hough Circle Transform
     circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, dp, min_dist,
